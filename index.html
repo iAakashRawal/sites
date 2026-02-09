@@ -238,13 +238,44 @@
                     </div>
 
                     {!collapsed && children.length > 0 && (
-                        <div className="flex flex-col ml-8 border-l-2 border-slate-700/50 pl-8 relative">
-                            {children.map((child, index) => (
-                                <div key={child.key} className="relative py-3">
-                                    <div className="absolute top-[26px] -left-[34px] w-8 h-0.5 bg-slate-700/50"></div>
-                                    <FlowNode data={child.value} name={child.key} />
-                                </div>
-                            ))}
+                        <div className="flex flex-col ml-12 relative">
+                            {children.map((child, index) => {
+                                const isFirst = index === 0;
+                                const isLast = index === children.length - 1;
+                                const hasSiblings = children.length > 1;
+
+                                return (
+                                    <div key={child.key} className="relative pl-8 py-2">
+                                        {/* --- Connector Logic (Rect Flow) --- */}
+                                        
+                                        {/* Horizontal Rung (Always connects to node) */}
+                                        <div className="absolute top-1/2 left-0 w-8 h-0.5 bg-slate-600 rounded-full"></div>
+
+                                        {/* Vertical Spine Segment */}
+                                        {/* Logic:
+                                            - If it's the only child: Horizontal line only.
+                                            - First child: Line starts at 50% height and goes down.
+                                            - Middle child: Line goes full height (top to bottom).
+                                            - Last child: Line starts at top and stops at 50% height.
+                                        */}
+                                        {hasSiblings && (
+                                            <div className={`absolute left-0 w-0.5 bg-slate-600
+                                                ${isFirst ? 'top-1/2 h-1/2' : ''}
+                                                ${isLast ? 'top-0 h-1/2' : 'h-full'}
+                                                ${!isFirst && !isLast ? 'top-0' : ''}
+                                            `}></div>
+                                        )}
+
+                                        {/* Corner Decorations (Optional, makes it look like pipes) */}
+                                        {/* For last child, the line comes from top and turns right. 
+                                            We can add a little curve or just keep it orthogonal. 
+                                            Orthogonal is cleaner for 'Rect Flow'. 
+                                        */}
+                                        
+                                        <FlowNode data={child.value} name={child.key} />
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -463,3 +494,5 @@
     </script>
 </body>
 </html>
+
+
