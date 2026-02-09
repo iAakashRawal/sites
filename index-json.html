@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Flow Visualizer</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Configuration for Custom Colors/Fonts -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            750: '#2d3748', // Custom shade between 700 and 800
+                            850: '#1a202c', // Custom darker shade
+                            950: '#020617',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
+                        sans: ['ui-sans-serif', 'system-ui', '-apple-system', "Segoe UI", 'Roboto', "Helvetica Neue", 'Arial', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0f172a; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+        
+        /* Utility for hiding scrollbar but allowing scroll */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 h-screen overflow-hidden">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- ICONS (Inline SVGs to remove external dependency) ---
+        const IconBase = ({ children, size = 24, className = "" }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+            >
+                {children}
+            </svg>
+        );
+
+        const AlertCircle = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></IconBase>;
+        const Check = (props) => <IconBase {...props}><polyline points="20 6 9 17 4 12"/></IconBase>;
+        const Copy = (props) => <IconBase {...props}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></IconBase>;
+        const GitGraph = (props) => <IconBase {...props}><circle cx="5" cy="6" r="3"/><path d="M5 9v6"/><circle cx="5" cy="18" r="3"/><path d="M12 3v18"/><circle cx="19" cy="6" r="3"/><path d="M16 15.7A9 9 0 0 0 19 9"/></IconBase>;
+        const CodeIcon = (props) => <IconBase {...props}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></IconBase>;
+        const ChevronRight = (props) => <IconBase {...props}><polyline points="9 18 15 12 9 6"/></IconBase>;
+        const ChevronDown = (props) => <IconBase {...props}><polyline points="6 9 12 15 18 9"/></IconBase>;
+        const TypeIcon = (props) => <IconBase {...props}><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></IconBase>;
+        const Hash = (props) => <IconBase {...props}><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></IconBase>;
+        const ListIcon = (props) => <IconBase {...props}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></IconBase>;
+        const BoxIcon = (props) => <IconBase {...props}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></IconBase>;
+        const LayoutIcon = (props) => <IconBase {...props}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></IconBase>;
+
+        // --- UTILITY FUNCTIONS ---
+        const getType = (value) => {
+            if (value === null) return 'null';
+            if (Array.isArray(value)) return 'array';
+            return typeof value;
+        };
+
+        const formatValue = (value) => {
+            if (value === null) return 'null';
+            if (typeof value === 'boolean') return value.toString();
+            if (typeof value === 'string') return `"${value}"`;
+            return value;
+        };
+
+        // --- COMPONENTS ---
+
+        const JsonEditor = ({ value, onChange, error }) => {
+            const textareaRef = useRef(null);
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = e.target.selectionStart;
+                    const end = e.target.selectionEnd;
+                    const newValue = value.substring(0, start) + '  ' + value.substring(end);
+                    onChange(newValue);
+                    setTimeout(() => {
+                        if (textareaRef.current) {
+                            textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 2;
+                        }
+                    }, 0);
+                }
+            };
+
+            const lineCount = value.split('\n').length;
+
+            return (
+                <div className="flex flex-col h-full bg-slate-900 rounded-lg overflow-hidden border border-slate-700 shadow-inner">
+                    <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                            <CodeIcon size={14} /> JSON Input
+                        </span>
+                        {error ? (
+                            <span className="flex items-center gap-1 text-xs text-red-400">
+                                <AlertCircle size={12} /> Invalid JSON
+                            </span>
+                        ) : (
+                            <span className="flex items-center gap-1 text-xs text-emerald-400">
+                                <Check size={12} /> Valid JSON
+                            </span>
+                        )}
+                    </div>
+                    <div className="relative flex-1 flex overflow-hidden">
+                        <div className="w-10 bg-slate-800/50 text-slate-500 text-right pr-2 pt-4 text-xs font-mono select-none border-r border-slate-800 leading-6">
+                            {Array.from({ length: lineCount }, (_, i) => (
+                                <div key={i}>{i + 1}</div>
+                            ))}
+                        </div>
+                        <textarea
+                            ref={textareaRef}
+                            value={value}
+                            onChange={(e) => onChange(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            className="flex-1 bg-transparent text-slate-300 p-4 font-mono text-sm resize-none focus:outline-none leading-6 whitespace-pre"
+                            spellCheck="false"
+                            placeholder='Paste your JSON here...'
+                        />
+                    </div>
+                    {error && (
+                        <div className="px-4 py-2 bg-red-900/20 border-t border-red-900/50 text-red-400 text-xs font-mono truncate">
+                            {error}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const FlowNode = ({ data, name, isRoot = false }) => {
+            const type = getType(data);
+            const isObject = type === 'object';
+            const isArray = type === 'array';
+            const isExpandable = isObject || isArray;
+            const [collapsed, setCollapsed] = useState(false);
+
+            const getTypeIcon = () => {
+                switch (type) {
+                    case 'object': return <BoxIcon size={14} className="text-blue-400" />;
+                    case 'array': return <ListIcon size={14} className="text-purple-400" />;
+                    case 'string': return <TypeIcon size={14} className="text-emerald-400" />;
+                    case 'number': return <Hash size={14} className="text-orange-400" />;
+                    case 'boolean': return <div className="text-[10px] font-bold text-pink-400">TF</div>;
+                    default: return <div className="w-3 h-3 rounded-full bg-slate-600" />;
+                }
+            };
+
+            if (!isExpandable) {
+                return (
+                    <div className="flex items-center">
+                        <div className="flex items-center gap-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded-md shadow-sm min-w-[120px] max-w-[300px] hover:border-slate-600 transition-colors">
+                            {getTypeIcon()}
+                            <div className="flex flex-col overflow-hidden">
+                                {name && <span className="text-xs font-bold text-slate-400 truncate">{name}</span>}
+                                <span className="text-xs font-mono text-slate-200 truncate">{formatValue(data)}</span>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            const children = isArray 
+                ? data.map((item, idx) => ({ key: idx, value: item }))
+                : Object.entries(data).map(([key, value]) => ({ key, value }));
+
+            return (
+                <div className="flex flex-row items-start">
+                    <div className="flex flex-col items-center z-10">
+                        <button 
+                            onClick={() => setCollapsed(!collapsed)}
+                            className={`flex flex-col items-start px-3 py-2 rounded-lg border shadow-md transition-all ${
+                                isRoot 
+                                ? 'bg-indigo-600 border-indigo-500 text-white' 
+                                : 'bg-slate-800 border-slate-600 hover:bg-slate-750'
+                            }`}
+                        >
+                            <div className="flex items-center gap-2">
+                                {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                                {getTypeIcon()}
+                                <span className={`text-sm font-bold ${isRoot ? 'text-white' : 'text-slate-200'}`}>
+                                    {name || (isArray ? 'Array' : 'Object')}
+                                </span>
+                                <span className="text-xs opacity-60 ml-1">
+                                    {children.length} items
+                                </span>
+                            </div>
+                        </button>
+                    </div>
+
+                    {!collapsed && children.length > 0 && (
+                        <div className="flex flex-col ml-8 border-l-2 border-slate-700/50 pl-8 relative">
+                            {children.map((child, index) => (
+                                <div key={child.key} className="relative py-3">
+                                    <div className="absolute top-[26px] -left-[34px] w-8 h-0.5 bg-slate-700/50"></div>
+                                    <FlowNode data={child.value} name={child.key} />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const TreeView = ({ data, name }) => {
+            const type = getType(data);
+            const isObject = type === 'object';
+            const isArray = type === 'array';
+            const [collapsed, setCollapsed] = useState(false);
+
+            if (!isObject && !isArray) {
+                return (
+                    <div className="font-mono text-sm leading-6 hover:bg-slate-800/50 rounded px-1">
+                        {name && <span className="text-purple-300 mr-2">{name}:</span>}
+                        <span className={
+                            type === 'string' ? 'text-emerald-400' :
+                            type === 'number' ? 'text-orange-400' :
+                            type === 'boolean' ? 'text-pink-400' : 'text-slate-400'
+                        }>
+                            {formatValue(data)}
+                        </span>
+                    </div>
+                );
+            }
+
+            const keys = isArray ? data : Object.keys(data);
+            const isEmpty = keys.length === 0;
+            const openBracket = isArray ? '[' : '{';
+            const closeBracket = isArray ? ']' : '}';
+
+            return (
+                <div className="font-mono text-sm leading-6">
+                    <div 
+                        className="flex items-center hover:bg-slate-800/50 rounded px-1 cursor-pointer select-none"
+                        onClick={() => setCollapsed(!collapsed)}
+                    >
+                        <span className="text-slate-500 mr-1 w-4 flex justify-center">
+                            {!isEmpty && (collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />)}
+                        </span>
+                        {name && <span className="text-purple-300 mr-2">{name}:</span>}
+                        <span className="text-slate-400">{openBracket}</span>
+                        {collapsed && !isEmpty && (
+                            <span className="text-slate-600 mx-1">...</span>
+                        )}
+                        {(collapsed || isEmpty) && (
+                            <span className="text-slate-400">{closeBracket}</span>
+                        )}
+                        {!collapsed && !isEmpty && (
+                            <span className="text-slate-600 text-xs ml-2 opacity-50">// {keys.length} items</span>
+                        )}
+                    </div>
+
+                    {!collapsed && !isEmpty && (
+                        <div className="pl-6 border-l border-slate-800 ml-2.5">
+                            {isArray 
+                                ? data.map((item, idx) => (
+                                    <TreeView key={idx} data={item} />
+                                ))
+                                : Object.entries(data).map(([key, val]) => (
+                                    <TreeView key={key} name={key} data={val} />
+                                ))
+                            }
+                            <div className="text-slate-400 pl-1">{closeBracket}</div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const App = () => {
+            const defaultJson = JSON.stringify({
+                "project": "JSON Flow",
+                "version": 1.0,
+                "active": true,
+                "features": ["Parsing", "Validation", "Visualization"],
+                "settings": {
+                    "theme": "dark",
+                    "retry": { "count": 3, "strategy": "exponential" }
+                },
+                "owner": null
+            }, null, 2);
+
+            const [input, setInput] = useState(defaultJson);
+            const [parsed, setParsed] = useState(null);
+            const [error, setError] = useState(null);
+            const [viewMode, setViewMode] = useState('flow');
+
+            useEffect(() => {
+                try {
+                    if (!input.trim()) {
+                        setParsed(null);
+                        setError(null);
+                        return;
+                    }
+                    const data = JSON.parse(input);
+                    setParsed(data);
+                    setError(null);
+                } catch (e) {
+                    setError(e.message);
+                }
+            }, [input]);
+
+            const copyToClipboard = () => {
+                navigator.clipboard.writeText(JSON.stringify(parsed, null, 2));
+            };
+
+            return (
+                <div className="h-screen w-full bg-slate-950 text-slate-200 flex flex-col font-sans">
+                    <header className="h-16 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md flex items-center justify-between px-6 shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-500/20">
+                                <GitGraph size={20} className="text-white" />
+                            </div>
+                            <div>
+                                <h1 className="font-bold text-lg tracking-tight text-white">JSON Flow</h1>
+                                <p className="text-xs text-slate-500 font-medium">Visual Object Formatter</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                            <button className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full text-sm font-medium transition-colors border border-slate-700">
+                                Export PNG
+                            </button>
+                        </div>
+                    </header>
+
+                    <main className="flex-1 flex overflow-hidden p-4 gap-4">
+                        <section className="flex-1 min-w-[300px] flex flex-col">
+                            <JsonEditor value={input} onChange={setInput} error={error} />
+                        </section>
+
+                        <section className="flex-[1.5] bg-slate-900 rounded-lg border border-slate-700 shadow-xl flex flex-col overflow-hidden relative">
+                            <div className="h-12 border-b border-slate-800 flex items-center justify-between px-4 bg-slate-900/50">
+                                <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-lg">
+                                    <button 
+                                        onClick={() => setViewMode('flow')}
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                                            viewMode === 'flow' 
+                                                ? 'bg-indigo-600 text-white shadow-md' 
+                                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+                                        }`}
+                                    >
+                                        <GitGraph size={14} /> Flow Chart
+                                    </button>
+                                    <button 
+                                        onClick={() => setViewMode('tree')}
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                                            viewMode === 'tree' 
+                                                ? 'bg-indigo-600 text-white shadow-md' 
+                                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+                                        }`}
+                                    >
+                                        <LayoutIcon size={14} /> Tree View
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={copyToClipboard}
+                                        disabled={!parsed}
+                                        className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors disabled:opacity-30"
+                                        title="Copy JSON"
+                                    >
+                                        <Copy size={16} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 overflow-auto bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-slate-900 custom-scrollbar p-8">
+                                {!parsed && !error && (
+                                    <div className="h-full flex flex-col items-center justify-center text-slate-600">
+                                        <BoxIcon size={48} className="mb-4 opacity-20" />
+                                        <p>Enter JSON to visualize</p>
+                                    </div>
+                                )}
+                                
+                                {error && (
+                                    <div className="h-full flex flex-col items-center justify-center text-red-400/50">
+                                        <AlertCircle size={48} className="mb-4 opacity-50" />
+                                        <p>Fix syntax errors to render flow</p>
+                                    </div>
+                                )}
+
+                                {parsed && (
+                                    <div className="min-w-fit min-h-fit">
+                                        {viewMode === 'flow' ? (
+                                            <FlowNode data={parsed} name="root" isRoot={true} />
+                                        ) : (
+                                            <div className="bg-slate-950 p-6 rounded-xl border border-slate-800 shadow-inner inline-block min-w-full">
+                                                <TreeView data={parsed} name="root" />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {viewMode === 'flow' && parsed && (
+                                <div className="absolute bottom-4 right-4 bg-slate-800/90 backdrop-blur border border-slate-700 p-3 rounded-lg shadow-xl text-xs flex flex-col gap-2">
+                                    <span className="font-semibold text-slate-400 mb-1">Legend</span>
+                                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-blue-400"></div> <span className="text-slate-300">Object</span></div>
+                                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-purple-400"></div> <span className="text-slate-300">Array</span></div>
+                                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-400"></div> <span className="text-slate-300">String</span></div>
+                                </div>
+                            )}
+
+                        </section>
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
