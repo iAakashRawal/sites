@@ -1,356 +1,430 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pure Elegance | Bespoke Glassware</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <style>
-        body {
-            margin: 0;
-            background-color: #050505;
-            color: white;
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
-        }
-        h1, h2, .serif {
-            font-family: 'Playfair Display', serif;
-        }
-        #canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            z-index: 1;
-            pointer-events: none;
-        }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-        }
-        .section {
-            position: relative;
-            z-index: 2;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            padding: 2rem;
-        }
-        .bg-gradient-main {
-            background: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #050505 100%);
-        }
-        /* Hide scrollbar */
-        ::-webkit-scrollbar { width: 0px; }
-    </style>
-</head>
-<body class="bg-gradient-main">
+import React, { useEffect, useRef, useState } from 'react';
+import * as THREE from 'three';
+import { 
+  Droplets, 
+  Truck, 
+  ShieldCheck, 
+  Phone, 
+  Instagram, 
+  Facebook, 
+  Twitter, 
+  Menu, 
+  X,
+  MapPin,
+  Clock,
+  Zap,
+  Leaf,
+  Star
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-    <div id="canvas-container"></div>
+// --- 3D Component: Realistic Branded Water Bottle ---
+const ThreeDBottle = () => {
+  const mountRef = useRef(null);
 
-    <!-- Navigation -->
-    <nav class="fixed top-0 w-full z-50 p-6 flex justify-between items-center px-12">
-        <div class="text-2xl font-bold tracking-tighter serif italic">PURE</div>
-        <div class="glass-card px-8 py-3 flex gap-8 text-sm uppercase tracking-widest font-light">
-            <a href="#" class="hover:text-blue-300 transition-colors">Philosophy</a>
-            <a href="#" class="hover:text-blue-300 transition-colors">Design</a>
-            <a href="#" class="hover:text-blue-300 transition-colors">Partners</a>
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(35, mount.clientWidth / mount.clientHeight, 0.1, 1000);
+    camera.position.z = 7;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(mount.clientWidth, mount.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    mount.appendChild(renderer.domElement);
+
+    // Dynamic Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+
+    const mainLight = new THREE.SpotLight(0xffffff, 2);
+    mainLight.position.set(5, 10, 5);
+    scene.add(mainLight);
+
+    const rimLight = new THREE.PointLight(0x38bdf8, 1);
+    rimLight.position.set(-5, 0, 5);
+    scene.add(rimLight);
+
+    const bottleGroup = new THREE.Group();
+    scene.add(bottleGroup);
+
+    // Materials
+    const plasticMat = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      transmission: 1,
+      opacity: 1,
+      roughness: 0.05,
+      metalness: 0,
+      thickness: 0.5,
+      ior: 1.45,
+      specularIntensity: 1,
+      clearcoat: 1,
+    });
+
+    const capMat = new THREE.MeshStandardMaterial({ 
+      color: 0x3b82f6, // Bright Blue Cap matching the image
+      metalness: 0.2, 
+      roughness: 0.4 
+    });
+
+    // 1. Realistic Lathe Geometry based on the image silhouette
+    const points = [];
+    // Base
+    points.push(new THREE.Vector2(0, -2));
+    points.push(new THREE.Vector2(0.4, -2));
+    points.push(new THREE.Vector2(0.65, -1.9));
+    points.push(new THREE.Vector2(0.75, -1.7));
+    
+    // Lower body with ridges (horizontal rings)
+    for (let i = 0; i < 12; i++) {
+        const y = -1.7 + (i * 0.15);
+        const r = 0.75 + (i % 2 === 0 ? 0.02 : -0.01);
+        points.push(new THREE.Vector2(r, y));
+    }
+
+    // Mid body (slight taper)
+    points.push(new THREE.Vector2(0.72, 0.5));
+    points.push(new THREE.Vector2(0.75, 1.2));
+
+    // Shoulder
+    points.push(new THREE.Vector2(0.65, 1.6));
+    points.push(new THREE.Vector2(0.4, 1.9));
+    
+    // Neck
+    points.push(new THREE.Vector2(0.28, 2.0));
+    points.push(new THREE.Vector2(0.28, 2.2));
+    
+    // Top Rim
+    points.push(new THREE.Vector2(0.32, 2.25));
+
+    const bottleGeo = new THREE.LatheGeometry(points, 64);
+    const bottleMesh = new THREE.Mesh(bottleGeo, plasticMat);
+    bottleGroup.add(bottleMesh);
+
+    // 2. The Cap (Blue with vertical detail)
+    const capGeo = new THREE.CylinderGeometry(0.33, 0.33, 0.35, 32);
+    const capMesh = new THREE.Mesh(capGeo, capMat);
+    capMesh.position.y = 2.35;
+    bottleGroup.add(capMesh);
+
+    // 3. Brand Badge (AquaPure Label)
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    // Transparent background
+    ctx.clearRect(0, 0, 512, 256);
+    // Draw Badge
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.roundRect(100, 80, 312, 96, 48);
+    ctx.fill();
+    // Text
+    ctx.fillStyle = '#3b82f6';
+    ctx.font = 'bold 44px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('AquaPure', 256, 145);
+    
+    const labelTexture = new THREE.CanvasTexture(canvas);
+    const labelGeo = new THREE.CylinderGeometry(0.76, 0.76, 0.8, 64, 1, true, 0, Math.PI);
+    const labelMat = new THREE.MeshStandardMaterial({ 
+        map: labelTexture, 
+        transparent: true,
+        side: THREE.DoubleSide
+    });
+    const labelMesh = new THREE.Mesh(labelGeo, labelMat);
+    labelMesh.position.y = 0.3;
+    labelMesh.rotation.y = -Math.PI / 2;
+    bottleGroup.add(labelMesh);
+
+    // 4. Water inside
+    const waterPoints = points.map(p => new THREE.Vector2(p.x * 0.96, p.y * 0.98)).filter(p => p.y < 1.3);
+    const waterGeo = new THREE.LatheGeometry(waterPoints, 32);
+    const waterMat = new THREE.MeshStandardMaterial({
+        color: 0xbae6fd,
+        transparent: true,
+        opacity: 0.5,
+    });
+    const waterMesh = new THREE.Mesh(waterGeo, waterMat);
+    bottleGroup.add(waterMesh);
+
+    // Animation Loop
+    let animationFrameId;
+    const animate = () => {
+      const t = Date.now() * 0.001;
+      bottleGroup.position.y = Math.sin(t * 1) * 0.15;
+      bottleGroup.rotation.y = t * 0.4;
+      
+      renderer.render(scene, camera);
+      animationFrameId = window.requestAnimationFrame(animate);
+    };
+    animate();
+
+    const handleResize = () => {
+      if (!mount) return;
+      camera.aspect = mount.clientWidth / mount.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(mount.clientWidth, mount.clientHeight);
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.cancelAnimationFrame(animationFrameId);
+      if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
+    };
+  }, []);
+
+  return <div ref={mountRef} className="w-full h-full" />;
+};
+
+// --- UI Components ---
+
+const Navbar = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-2xl border-b border-pink-100">
+      <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <div className="bg-gradient-to-tr from-blue-500 via-emerald-400 to-pink-400 p-2 rounded-2xl shadow-lg">
+            <Droplets className="text-white w-6 h-6" />
+          </div>
+          <span className="text-2xl font-black tracking-tight text-slate-900">
+            Aqua<span className="text-blue-500">Pure</span>
+          </span>
         </div>
-        <button class="glass-card px-6 py-2 text-sm uppercase tracking-widest border-none hover:bg-white/10 transition-all">
-            Inquire
+
+        <div className="hidden md:flex items-center gap-8 font-bold text-slate-400 uppercase text-xs tracking-[0.2em]">
+          <a href="#" className="hover:text-pink-500 transition-colors">Home</a>
+          <a href="#services" className="hover:text-emerald-500 transition-colors">Our Process</a>
+          <a href="#plans" className="hover:text-blue-500 transition-colors">Pricing</a>
+          <button className="bg-blue-600 text-white px-8 py-3 rounded-full hover:bg-pink-500 transition-all shadow-xl shadow-blue-100">
+            Order Now
+          </button>
+        </div>
+
+        <button className="md:hidden text-slate-800" onClick={() => setIsOpen(!isOpen)}>
+          {isOpen ? <X /> : <Menu />}
         </button>
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="md:hidden fixed top-0 right-0 h-screen w-2/3 bg-white shadow-2xl z-50 p-10 flex flex-col gap-8"
+          >
+            <button onClick={() => setIsOpen(false)} className="self-end"><X /></button>
+            <a href="#" className="text-3xl font-black text-blue-500">Home</a>
+            <a href="#services" className="text-3xl font-black text-emerald-500">Process</a>
+            <a href="#plans" className="text-3xl font-black text-pink-500">Pricing</a>
+            <button className="mt-auto bg-blue-600 text-white py-5 rounded-3xl font-black text-xl">
+              Quick Order
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
+  );
+};
 
-    <!-- Hero Section -->
-    <section class="section flex-col justify-center text-center">
-        <div class="max-w-4xl mx-auto" data-gsap="hero-text">
-            <h1 class="text-7xl md:text-9xl mb-4 font-bold tracking-tight opacity-90">Elegance.</h1>
-            <p class="text-xl md:text-2xl font-light text-gray-400 max-w-2xl mx-auto italic">
-                Bespoke high-fidelity glassware with captured purity.
-            </p>
+const FeatureCard = ({ icon: Icon, title, desc, gradient, delay }) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 30 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6, delay }}
+    viewport={{ once: true }}
+    className="relative group p-1 w-full"
+  >
+    <div className={`absolute inset-0 bg-gradient-to-r ${gradient} rounded-[3rem] blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-500`} />
+    <div className="relative bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/50 hover:-translate-y-4 transition-all duration-500 overflow-hidden">
+        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 bg-gradient-to-tr ${gradient} text-white shadow-lg`}>
+            <Icon className="w-8 h-8" />
         </div>
-        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-40">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
-        </div>
-    </section>
+        <h3 className="text-2xl font-black text-slate-900 mb-4">{title}</h3>
+        <p className="text-slate-500 leading-relaxed font-medium">{desc}</p>
+    </div>
+  </motion.div>
+);
 
-    <!-- Scroll Reveal Section: The Brand -->
-    <section class="section">
-        <div class="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div class="glass-card p-12 space-y-6 max-w-lg" data-gsap="reveal-card">
-                <span class="text-blue-400 uppercase tracking-widest text-xs font-bold">The Signature</span>
-                <h2 class="text-5xl font-bold leading-tight">Crystalline <br>Details.</h2>
-                <p class="text-gray-400 leading-relaxed font-light">
-                    Every drop tells a story of freshness. Our bottles are designed to maintain the perfect dew-point aesthetics, highlighting the cold, crisp nature of your beverage.
-                </p>
-                <div class="pt-4">
-                    <button class="border-b border-white/30 pb-2 hover:border-white transition-all text-sm uppercase tracking-widest">
-                        View Texture
-                    </button>
-                </div>
-            </div>
-            <div></div> <!-- 3D space -->
-        </div>
-    </section>
+const App = () => {
+  return (
+    <div className="min-h-screen bg-[#FDFDFF] text-slate-900 font-sans selection:bg-pink-100 selection:text-pink-600 overflow-x-hidden">
+      <Navbar />
 
-    <!-- Detailed View Section -->
-    <section class="section justify-end">
-        <div class="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div></div> <!-- 3D space -->
-            <div class="glass-card p-12 space-y-6 max-w-lg text-right ml-auto" data-gsap="reveal-card-2">
-                <span class="text-blue-400 uppercase tracking-widest text-xs font-bold">Freshness</span>
-                <h2 class="text-5xl font-bold leading-tight">Tactile <br>Clarity.</h2>
-                <p class="text-gray-400 leading-relaxed font-light text-right">
-                    Using advanced refractive algorithms, we simulate the interplay between light and liquid. The result is a visual experience that is as refreshing as the drink itself.
-                </p>
-            </div>
-        </div>
-    </section>
+      {/* Hero Section */}
+      <section className="relative pt-32 pb-16 md:pt-48 md:pb-32">
+        {/* Dynamic Theme Accents */}
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-100/50 rounded-full blur-[100px] -z-10" />
+        <div className="absolute top-[20%] left-[-10%] w-[600px] h-[600px] bg-pink-100/40 rounded-full blur-[120px] -z-10 animate-pulse" />
+        <div className="absolute bottom-[-10%] left-[20%] w-[400px] h-[400px] bg-blue-100/50 rounded-full blur-[100px] -z-10" />
 
-    <!-- Contact CTA -->
-    <section class="section flex-col justify-center text-center">
-        <div class="glass-card p-16 max-w-3xl mx-auto relative overflow-hidden group cursor-pointer transition-all hover:bg-white/5">
-            <h2 class="text-6xl font-bold mb-8 italic">Define Your Legacy</h2>
-            <p class="text-gray-400 mb-8 max-w-md mx-auto">Elevate your table service with Pure Elegance. Inquire today for custom prototyping.</p>
-            <div class="flex justify-center gap-6">
-                <input type="email" placeholder="Your Email" class="bg-transparent border-b border-white/20 px-4 py-2 focus:outline-none focus:border-white transition-all w-64">
-                <button class="bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-gray-200 transition-all uppercase text-xs tracking-widest">Connect</button>
-            </div>
-        </div>
-        <footer class="mt-24 text-gray-600 text-xs uppercase tracking-widest">
-            &copy; 2025 Pure Elegance Studio. All rights reserved.
-        </footer>
-    </section>
+        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-10 items-center">
+          <div className="z-10 text-center md:text-left">
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="inline-flex items-center gap-3 py-2.5 px-6 bg-white border border-emerald-100 text-emerald-600 rounded-full text-xs font-black uppercase tracking-[0.3em] mb-12 shadow-sm">
+                <Leaf className="w-4 h-4" />
+                Pure Mountain Spring
+              </div>
+              <h1 className="text-6xl md:text-[9rem] font-black leading-[0.85] mb-12 text-slate-950 tracking-tighter">
+                Fresh <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-emerald-400 to-pink-500">Vibrancy.</span>
+              </h1>
+              <p className="text-xl md:text-2xl text-slate-500 mb-16 max-w-xl leading-relaxed font-medium">
+                The world's first hydration brand built for <span className="text-pink-500">energy</span>, <span className="text-emerald-500">purity</span>, and <span className="text-blue-500">style</span>. Real water, real 3D freshness.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-6 justify-center md:justify-start">
+                <button className="bg-slate-950 text-white px-12 py-6 rounded-[2.5rem] text-xl font-black shadow-2xl hover:bg-blue-600 transition-all">
+                  Get Started
+                </button>
+                <button className="bg-white border-2 border-slate-100 text-slate-500 px-12 py-6 rounded-[2.5rem] text-xl font-black hover:border-pink-200 transition-all">
+                  Our Method
+                </button>
+              </div>
+            </motion.div>
+          </div>
 
-    <script>
-        gsap.registerPlugin(ScrollTrigger);
-
-        let scene, camera, renderer, bottle, label, dropsGroup;
-        let mouseX = 0, mouseY = 0;
-        let targetX = 0, targetY = 0;
-        const drops = [];
-
-        function init3D() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 5;
-
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.toneMapping = THREE.ReinhardToneMapping;
-            document.getElementById('canvas-container').appendChild(renderer.domElement);
-
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambientLight);
-
-            const spot1 = new THREE.SpotLight(0xffffff, 2.5);
-            spot1.position.set(5, 5, 5);
-            scene.add(spot1);
-
-            const spot2 = new THREE.SpotLight(0x00ccff, 1.5);
-            spot2.position.set(-5, 2, 2);
-            scene.add(spot2);
-
-            // Create Bottle Shape
-            const points = [];
-            for (let i = 0; i < 20; i++) {
-                const x = Math.sin(i * 0.2) * 0.4 + 0.6;
-                const y = (i - 10) * 0.4;
-                let finalX = x;
-                if (i > 15) finalX = 0.3;
-                if (i > 18) finalX = 0.35;
-                points.push(new THREE.Vector2(finalX, y));
-            }
-
-            const geometry = new THREE.LatheGeometry(points, 64);
-            const material = new THREE.MeshPhysicalMaterial({
-                color: 0xffffff,
-                metalness: 0,
-                roughness: 0.02,
-                transmission: 0.98,
-                thickness: 0.8,
-                ior: 1.52,
-                transparent: true,
-                opacity: 0.7,
-                reflectivity: 0.5,
-                clearcoat: 1,
-            });
-
-            bottle = new THREE.Mesh(geometry, material);
-            scene.add(bottle);
-
-            // Drops Group
-            dropsGroup = new THREE.Group();
-            bottle.add(dropsGroup);
-
-            // Add Condensation Drops
-            createDrops(80);
-
-            // Branding Label
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 512;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'rgba(255, 255, 255, 0)';
-            ctx.fillRect(0, 0, 512, 512);
-            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
-            ctx.strokeRect(100, 150, 312, 212);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 40px Playfair Display'; ctx.textAlign = 'center';
-            ctx.fillText('PURE', 256, 240);
-            ctx.font = '20px Inter'; ctx.fillText('EST. 2025', 256, 280);
-            ctx.font = 'italic 16px Inter'; ctx.fillText('The Restaurant Collection', 256, 320);
-
-            const labelTexture = new THREE.CanvasTexture(canvas);
-            const labelGeo = new THREE.CylinderGeometry(0.61, 0.61, 1.2, 32, 1, true, 0, Math.PI);
-            const labelMat = new THREE.MeshBasicMaterial({ 
-                map: labelTexture, transparent: true, side: THREE.DoubleSide, opacity: 0
-            });
-            label = new THREE.Mesh(labelGeo, labelMat);
-            label.position.y = -0.5;
-            label.rotation.y = Math.PI / 2;
-            bottle.add(label);
-
-            function animate() {
-                requestAnimationFrame(animate);
-                targetX += (mouseX - targetX) * 0.05;
-                targetY += (mouseY - targetY) * 0.05;
-
-                bottle.rotation.y += targetX * 0.3 + 0.002; // Slow auto-rotation
-                bottle.rotation.x = targetY * 0.2;
-
-                // Animate Drops
-                drops.forEach(drop => {
-                    if (drop.speed > 0) {
-                        drop.mesh.position.y -= drop.speed;
-                        // Reset drop to top of main body if it drips too low
-                        if (drop.mesh.position.y < -3) {
-                            drop.mesh.position.y = 1.5 + Math.random();
-                        }
-                    }
-                });
-
-                renderer.render(scene, camera);
-            }
-            animate();
-        }
-
-        function createDrops(count) {
-            const dropMat = new THREE.MeshPhysicalMaterial({
-                color: 0xffffff,
-                transmission: 1,
-                ior: 1.33,
-                roughness: 0,
-                thickness: 0.1,
-                transparent: true,
-                opacity: 0.8
-            });
-
-            for (let i = 0; i < count; i++) {
-                const size = Math.random() * 0.04 + 0.01;
-                const dropGeo = new THREE.IcosahedronGeometry(size, 2);
-                const dropMesh = new THREE.Mesh(dropGeo, dropMat);
-
-                // Position drop on bottle surface
-                // We use cylindrical coordinates to match the bottle lathe
-                const angle = Math.random() * Math.PI * 2;
-                const h = (Math.random() - 0.5) * 6; // Height variation
-                
-                // Calculate radius at this height based on bottle shape (approximation)
-                let r = 0.6; 
-                if (h > 2) r = 0.3; // Neck area
-
-                dropMesh.position.x = Math.cos(angle) * r;
-                dropMesh.position.z = Math.sin(angle) * r;
-                dropMesh.position.y = h;
-                
-                // Flatten drops slightly against surface
-                dropMesh.scale.set(1.5, 1, 0.5);
-                dropMesh.lookAt(new THREE.Vector3(0, h, 0));
-
-                const speed = Math.random() > 0.8 ? Math.random() * 0.005 + 0.002 : 0;
-                
-                drops.push({ mesh: dropMesh, speed });
-                dropsGroup.add(dropMesh);
-            }
-        }
-
-        function initScrollEffects() {
-            gsap.to(bottle.position, {
-                z: 2,
-                scrollTrigger: {
-                    trigger: ".section:nth-child(2)",
-                    start: "top bottom",
-                    end: "top top",
-                    scrub: 1
-                }
-            });
-
-            gsap.to(label.material, {
-                opacity: 1,
-                scrollTrigger: {
-                    trigger: ".section:nth-child(2)",
-                    start: "top 60%",
-                    end: "top 20%",
-                    scrub: true
-                }
-            });
-
-            gsap.to(bottle.position, {
-                x: -2,
-                scrollTrigger: {
-                    trigger: ".section:nth-child(3)",
-                    start: "top bottom",
-                    end: "top top",
-                    scrub: 1
-                }
-            });
-
-            gsap.from('[data-gsap="hero-text"]', { opacity: 0, y: 50, duration: 1.5, ease: "power4.out" });
+          {/* Realistic 3D Model View */}
+          <div className="h-[600px] md:h-[850px] relative">
+            <div className="absolute inset-0 bg-gradient-to-tr from-blue-100/20 via-emerald-50/20 to-pink-100/20 rounded-full blur-3xl -z-10" />
+            <ThreeDBottle />
             
-            gsap.from('[data-gsap="reveal-card"]', {
-                opacity: 0, x: -100,
-                scrollTrigger: {
-                    trigger: '[data-gsap="reveal-card"]',
-                    start: "top 80%",
-                    toggleActions: "play none none reverse"
-                }
-            });
+            {/* Context Labels */}
+            <motion.div 
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 3, repeat: Infinity }}
+              className="absolute top-1/4 right-10 bg-white/90 backdrop-blur-md p-5 rounded-3xl shadow-xl border border-white"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-emerald-500 text-white p-2 rounded-xl"><Star className="w-5 h-5" /></div>
+                <span className="font-black text-slate-800">5.0 Purity Score</span>
+              </div>
+            </motion.div>
 
-            gsap.from('[data-gsap="reveal-card-2"]', {
-                opacity: 0, x: 100,
-                scrollTrigger: {
-                    trigger: '[data-gsap="reveal-card-2"]',
-                    start: "top 80%",
-                    toggleActions: "play none none reverse"
-                }
-            });
-        }
+            <motion.div 
+              animate={{ x: [0, 10, 0] }}
+              transition={{ duration: 4, repeat: Infinity }}
+              className="absolute bottom-1/4 left-5 bg-white/90 backdrop-blur-md p-5 rounded-3xl shadow-xl border border-white"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-pink-500 text-white p-2 rounded-xl"><Zap className="w-5 h-5" /></div>
+                <span className="font-black text-slate-800">Fast Delivery</span>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
 
-        window.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth) - 0.5;
-            mouseY = (e.clientY / window.innerHeight) - 0.5;
-        });
+      {/* Benefits Section */}
+      <section id="services" className="py-40 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-32">
+            <h2 className="text-5xl md:text-8xl font-black mb-10 tracking-tighter">Color Your Health</h2>
+            <p className="text-slate-400 text-2xl max-w-2xl mx-auto font-bold uppercase tracking-widest leading-relaxed">
+              Why settle for clear when you can have vibrant?
+            </p>
+          </div>
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+          <div className="grid md:grid-cols-3 gap-12">
+            <FeatureCard 
+              icon={Droplets}
+              title="Mint Filtration"
+              desc="8-stage ionic filtration that keeps essential minerals while removing every trace of impurities."
+              gradient="from-emerald-400 to-teal-500"
+              delay={0.1}
+            />
+            <FeatureCard 
+              icon={Zap}
+              title="Pink Energy"
+              desc="Optimized pH balance designed to give you a natural energy boost throughout your hectic day."
+              gradient="from-pink-400 to-rose-500"
+              delay={0.2}
+            />
+            <FeatureCard 
+              icon={Truck}
+              title="Blue Express"
+              desc="Real-time delivery tracking with a carbon-neutral fleet of electric pods."
+              gradient="from-blue-400 to-indigo-500"
+              delay={0.3}
+            />
+          </div>
+        </div>
+      </section>
 
-        window.onload = () => {
-            init3D();
-            initScrollEffects();
-        };
-    </script>
-</body>
-</html>
+      {/* Subscription Banner */}
+      <section className="py-40 px-6">
+        <div className="max-w-6xl mx-auto bg-slate-950 rounded-[5rem] p-16 md:p-32 text-center text-white relative overflow-hidden shadow-3xl">
+          <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-blue-600/30 via-emerald-500/20 to-pink-500/30 -z-0" />
+          <h2 className="text-6xl md:text-9xl font-black mb-12 relative z-10 tracking-tighter leading-[0.85]">
+            Freshness <br /> Unlimited.
+          </h2>
+          <p className="text-2xl text-slate-400 mb-16 max-w-xl mx-auto font-bold relative z-10">
+            Subscribe today and get a personalized colorful bottle set for your home.
+          </p>
+          <button className="relative z-10 bg-white text-slate-950 px-16 py-8 rounded-[3rem] text-2xl font-black shadow-2xl hover:bg-emerald-400 hover:text-white transition-all">
+            Join the Club
+          </button>
+        </div>
+      </section>
 
+      {/* Footer */}
+      <footer className="bg-slate-50 py-40">
+        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-20">
+          <div className="col-span-1 md:col-span-2">
+            <div className="flex items-center gap-3 mb-10">
+              <div className="bg-slate-950 p-2.5 rounded-2xl shadow-xl">
+                <Droplets className="text-white w-8 h-8" />
+              </div>
+              <span className="text-4xl font-black tracking-tighter">AquaPure</span>
+            </div>
+            <p className="text-2xl text-slate-400 max-w-sm mb-12 font-bold leading-relaxed">
+              Hydration is an art. <br />We're the artists.
+            </p>
+            <div className="flex gap-6">
+              {[Instagram, Facebook, Twitter].map((Icon, i) => (
+                <a key={i} href="#" className="w-16 h-16 bg-white border-2 border-slate-100 rounded-3xl flex items-center justify-center text-slate-400 hover:text-pink-500 hover:border-pink-200 transition-all">
+                  <Icon className="w-8 h-8" />
+                </a>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="text-slate-900 font-black mb-10 uppercase tracking-widest text-sm">Services</h4>
+            <ul className="space-y-6 text-xl text-slate-400 font-bold">
+              <li><a href="#" className="hover:text-blue-500">Home Supply</a></li>
+              <li><a href="#" className="hover:text-emerald-500">Office Plans</a></li>
+              <li><a href="#" className="hover:text-pink-500">Eco-Refill</a></li>
+              <li><a href="#" className="hover:text-blue-500">Custom Labels</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-slate-900 font-black mb-10 uppercase tracking-widest text-sm">Legal</h4>
+            <ul className="space-y-6 text-xl text-slate-400 font-bold">
+              <li><a href="#" className="hover:text-blue-500">Privacy</a></li>
+              <li><a href="#" className="hover:text-emerald-500">Terms</a></li>
+              <li><a href="#" className="hover:text-pink-500">Safety</a></li>
+              <li><a href="#" className="hover:text-blue-500">Cookies</a></li>
+            </ul>
+          </div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-6 mt-40 pt-12 border-t border-slate-200 text-center text-slate-300 font-black tracking-[0.4em] uppercase text-[10px]">
+          AquaPure Labs — {new Date().getFullYear()} — Pure Perfection
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default App;
