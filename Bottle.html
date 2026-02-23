@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pure Elegance | Bespoke Glassware</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            background-color: #050505;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        h1, h2, .serif {
+            font-family: 'Playfair Display', serif;
+        }
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+        }
+        .section {
+            position: relative;
+            z-index: 2;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 2rem;
+        }
+        .bg-gradient-main {
+            background: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #050505 100%);
+        }
+        /* Hide scrollbar */
+        ::-webkit-scrollbar { width: 0px; }
+    </style>
+</head>
+<body class="bg-gradient-main">
+
+    <div id="canvas-container"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 p-6 flex justify-between items-center px-12">
+        <div class="text-2xl font-bold tracking-tighter serif italic">PURE</div>
+        <div class="glass-card px-8 py-3 flex gap-8 text-sm uppercase tracking-widest font-light">
+            <a href="#" class="hover:text-blue-300 transition-colors">Philosophy</a>
+            <a href="#" class="hover:text-blue-300 transition-colors">Design</a>
+            <a href="#" class="hover:text-blue-300 transition-colors">Partners</a>
+        </div>
+        <button class="glass-card px-6 py-2 text-sm uppercase tracking-widest border-none hover:bg-white/10 transition-all">
+            Inquire
+        </button>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="section flex-col justify-center text-center">
+        <div class="max-w-4xl mx-auto" data-gsap="hero-text">
+            <h1 class="text-7xl md:text-9xl mb-4 font-bold tracking-tight opacity-90">Elegance.</h1>
+            <p class="text-xl md:text-2xl font-light text-gray-400 max-w-2xl mx-auto italic">
+                Bespoke high-fidelity glassware with captured purity.
+            </p>
+        </div>
+        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-40">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
+        </div>
+    </section>
+
+    <!-- Scroll Reveal Section: The Brand -->
+    <section class="section">
+        <div class="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div class="glass-card p-12 space-y-6 max-w-lg" data-gsap="reveal-card">
+                <span class="text-blue-400 uppercase tracking-widest text-xs font-bold">The Signature</span>
+                <h2 class="text-5xl font-bold leading-tight">Crystalline <br>Details.</h2>
+                <p class="text-gray-400 leading-relaxed font-light">
+                    Every drop tells a story of freshness. Our bottles are designed to maintain the perfect dew-point aesthetics, highlighting the cold, crisp nature of your beverage.
+                </p>
+                <div class="pt-4">
+                    <button class="border-b border-white/30 pb-2 hover:border-white transition-all text-sm uppercase tracking-widest">
+                        View Texture
+                    </button>
+                </div>
+            </div>
+            <div></div> <!-- 3D space -->
+        </div>
+    </section>
+
+    <!-- Detailed View Section -->
+    <section class="section justify-end">
+        <div class="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div></div> <!-- 3D space -->
+            <div class="glass-card p-12 space-y-6 max-w-lg text-right ml-auto" data-gsap="reveal-card-2">
+                <span class="text-blue-400 uppercase tracking-widest text-xs font-bold">Freshness</span>
+                <h2 class="text-5xl font-bold leading-tight">Tactile <br>Clarity.</h2>
+                <p class="text-gray-400 leading-relaxed font-light text-right">
+                    Using advanced refractive algorithms, we simulate the interplay between light and liquid. The result is a visual experience that is as refreshing as the drink itself.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact CTA -->
+    <section class="section flex-col justify-center text-center">
+        <div class="glass-card p-16 max-w-3xl mx-auto relative overflow-hidden group cursor-pointer transition-all hover:bg-white/5">
+            <h2 class="text-6xl font-bold mb-8 italic">Define Your Legacy</h2>
+            <p class="text-gray-400 mb-8 max-w-md mx-auto">Elevate your table service with Pure Elegance. Inquire today for custom prototyping.</p>
+            <div class="flex justify-center gap-6">
+                <input type="email" placeholder="Your Email" class="bg-transparent border-b border-white/20 px-4 py-2 focus:outline-none focus:border-white transition-all w-64">
+                <button class="bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-gray-200 transition-all uppercase text-xs tracking-widest">Connect</button>
+            </div>
+        </div>
+        <footer class="mt-24 text-gray-600 text-xs uppercase tracking-widest">
+            &copy; 2025 Pure Elegance Studio. All rights reserved.
+        </footer>
+    </section>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        let scene, camera, renderer, bottle, label, dropsGroup;
+        let mouseX = 0, mouseY = 0;
+        let targetX = 0, targetY = 0;
+        const drops = [];
+
+        function init3D() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ReinhardToneMapping;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const spot1 = new THREE.SpotLight(0xffffff, 2.5);
+            spot1.position.set(5, 5, 5);
+            scene.add(spot1);
+
+            const spot2 = new THREE.SpotLight(0x00ccff, 1.5);
+            spot2.position.set(-5, 2, 2);
+            scene.add(spot2);
+
+            // Create Bottle Shape
+            const points = [];
+            for (let i = 0; i < 20; i++) {
+                const x = Math.sin(i * 0.2) * 0.4 + 0.6;
+                const y = (i - 10) * 0.4;
+                let finalX = x;
+                if (i > 15) finalX = 0.3;
+                if (i > 18) finalX = 0.35;
+                points.push(new THREE.Vector2(finalX, y));
+            }
+
+            const geometry = new THREE.LatheGeometry(points, 64);
+            const material = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                metalness: 0,
+                roughness: 0.02,
+                transmission: 0.98,
+                thickness: 0.8,
+                ior: 1.52,
+                transparent: true,
+                opacity: 0.7,
+                reflectivity: 0.5,
+                clearcoat: 1,
+            });
+
+            bottle = new THREE.Mesh(geometry, material);
+            scene.add(bottle);
+
+            // Drops Group
+            dropsGroup = new THREE.Group();
+            bottle.add(dropsGroup);
+
+            // Add Condensation Drops
+            createDrops(80);
+
+            // Branding Label
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(255, 255, 255, 0)';
+            ctx.fillRect(0, 0, 512, 512);
+            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+            ctx.strokeRect(100, 150, 312, 212);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 40px Playfair Display'; ctx.textAlign = 'center';
+            ctx.fillText('PURE', 256, 240);
+            ctx.font = '20px Inter'; ctx.fillText('EST. 2025', 256, 280);
+            ctx.font = 'italic 16px Inter'; ctx.fillText('The Restaurant Collection', 256, 320);
+
+            const labelTexture = new THREE.CanvasTexture(canvas);
+            const labelGeo = new THREE.CylinderGeometry(0.61, 0.61, 1.2, 32, 1, true, 0, Math.PI);
+            const labelMat = new THREE.MeshBasicMaterial({ 
+                map: labelTexture, transparent: true, side: THREE.DoubleSide, opacity: 0
+            });
+            label = new THREE.Mesh(labelGeo, labelMat);
+            label.position.y = -0.5;
+            label.rotation.y = Math.PI / 2;
+            bottle.add(label);
+
+            function animate() {
+                requestAnimationFrame(animate);
+                targetX += (mouseX - targetX) * 0.05;
+                targetY += (mouseY - targetY) * 0.05;
+
+                bottle.rotation.y += targetX * 0.3 + 0.002; // Slow auto-rotation
+                bottle.rotation.x = targetY * 0.2;
+
+                // Animate Drops
+                drops.forEach(drop => {
+                    if (drop.speed > 0) {
+                        drop.mesh.position.y -= drop.speed;
+                        // Reset drop to top of main body if it drips too low
+                        if (drop.mesh.position.y < -3) {
+                            drop.mesh.position.y = 1.5 + Math.random();
+                        }
+                    }
+                });
+
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        function createDrops(count) {
+            const dropMat = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                transmission: 1,
+                ior: 1.33,
+                roughness: 0,
+                thickness: 0.1,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            for (let i = 0; i < count; i++) {
+                const size = Math.random() * 0.04 + 0.01;
+                const dropGeo = new THREE.IcosahedronGeometry(size, 2);
+                const dropMesh = new THREE.Mesh(dropGeo, dropMat);
+
+                // Position drop on bottle surface
+                // We use cylindrical coordinates to match the bottle lathe
+                const angle = Math.random() * Math.PI * 2;
+                const h = (Math.random() - 0.5) * 6; // Height variation
+                
+                // Calculate radius at this height based on bottle shape (approximation)
+                let r = 0.6; 
+                if (h > 2) r = 0.3; // Neck area
+
+                dropMesh.position.x = Math.cos(angle) * r;
+                dropMesh.position.z = Math.sin(angle) * r;
+                dropMesh.position.y = h;
+                
+                // Flatten drops slightly against surface
+                dropMesh.scale.set(1.5, 1, 0.5);
+                dropMesh.lookAt(new THREE.Vector3(0, h, 0));
+
+                const speed = Math.random() > 0.8 ? Math.random() * 0.005 + 0.002 : 0;
+                
+                drops.push({ mesh: dropMesh, speed });
+                dropsGroup.add(dropMesh);
+            }
+        }
+
+        function initScrollEffects() {
+            gsap.to(bottle.position, {
+                z: 2,
+                scrollTrigger: {
+                    trigger: ".section:nth-child(2)",
+                    start: "top bottom",
+                    end: "top top",
+                    scrub: 1
+                }
+            });
+
+            gsap.to(label.material, {
+                opacity: 1,
+                scrollTrigger: {
+                    trigger: ".section:nth-child(2)",
+                    start: "top 60%",
+                    end: "top 20%",
+                    scrub: true
+                }
+            });
+
+            gsap.to(bottle.position, {
+                x: -2,
+                scrollTrigger: {
+                    trigger: ".section:nth-child(3)",
+                    start: "top bottom",
+                    end: "top top",
+                    scrub: 1
+                }
+            });
+
+            gsap.from('[data-gsap="hero-text"]', { opacity: 0, y: 50, duration: 1.5, ease: "power4.out" });
+            
+            gsap.from('[data-gsap="reveal-card"]', {
+                opacity: 0, x: -100,
+                scrollTrigger: {
+                    trigger: '[data-gsap="reveal-card"]',
+                    start: "top 80%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+
+            gsap.from('[data-gsap="reveal-card-2"]', {
+                opacity: 0, x: 100,
+                scrollTrigger: {
+                    trigger: '[data-gsap="reveal-card-2"]',
+                    start: "top 80%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) - 0.5;
+            mouseY = (e.clientY / window.innerHeight) - 0.5;
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = () => {
+            init3D();
+            initScrollEffects();
+        };
+    </script>
+</body>
+</html>
+
