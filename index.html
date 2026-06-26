@@ -177,6 +177,25 @@
             <!-- Stream Video element -->
             <video id="video-stream" class="w-full h-full object-cover transition-all duration-300 filtered-view" autoplay playsinline muted></video>
             
+            <!-- Dynamic Camera Access / Instruction Overlay -->
+            <div id="camera-error-overlay" class="absolute inset-0 bg-neutral-950/95 z-30 flex flex-col items-center justify-center text-center p-6 hidden">
+                <div class="w-16 h-16 rounded-full bg-brand-red/10 border border-brand-red/30 flex items-center justify-center mb-4 animate-pulse">
+                    <i id="error-overlay-icon" class="fa-solid fa-video-slash text-brand-red text-2xl"></i>
+                </div>
+                <h3 id="error-overlay-title" class="text-white font-bold text-lg mb-2">Camera Permissions Requested</h3>
+                <p id="error-overlay-desc" class="text-white/60 text-xs max-w-sm mb-6 leading-relaxed">
+                    Lumina Studio needs permission to access your lens to capture high-quality photos and videos.
+                </p>
+                <div class="flex gap-3">
+                    <button id="btn-retry-camera" class="px-5 py-2.5 bg-brand-yellow hover:bg-white text-black font-semibold rounded-xl text-xs uppercase tracking-wider transition-all duration-300 shadow-lg shadow-brand-yellow/10">
+                        Grant / Try Again
+                    </button>
+                    <button id="btn-troubleshoot" class="px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white/80 font-semibold rounded-xl text-xs uppercase tracking-wider transition-all duration-300">
+                        Help
+                    </button>
+                </div>
+            </div>
+
             <!-- Grid Lines Overlay (Hidden by default) -->
             <div id="grid-overlay" class="absolute inset-0 pointer-events-none z-10 grid grid-cols-3 grid-rows-3 hidden">
                 <div class="grid-line-r grid-line-v grid-line-h"></div>
@@ -511,6 +530,13 @@
         const flipBtn = document.getElementById('btn-flip');
         const flashOverlay = document.getElementById('flash-overlay');
 
+        // Dynamic Error / Help UI Viewport Elements
+        const cameraErrorOverlay = document.getElementById('camera-error-overlay');
+        const errorOverlayTitle = document.getElementById('error-overlay-title');
+        const errorOverlayDesc = document.getElementById('error-overlay-desc');
+        const btnRetryCamera = document.getElementById('btn-retry-camera');
+        const btnTroubleshoot = document.getElementById('btn-troubleshoot');
+
         // Gallery Modals
         const galleryModal = document.getElementById('gallery-modal');
         const btnGalleryClose = document.getElementById('btn-gallery-close');
@@ -567,53 +593,107 @@
         ];
 
         /* ==========================================
-           CAMERA STREAM INITIALIZATION
+           CAMERA STREAM INITIALIZATION (WITH TIERED FALLBACKS)
            ========================================== */
         
         async function startCamera() {
             // Stop any existing stream before opening a new one
             stopCamera();
+            hideCameraErrorOverlay();
 
-            const constraints = {
-                video: {
-                    facingMode: currentFacingMode,
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
-                },
-                audio: audioEnabled
-            };
-
-            document.getElementById('cam-status-dot').classList.remove('text-green-500');
+            document.getElementById('cam-status-dot').classList.remove('text-green-500', 'text-red-500');
             document.getElementById('cam-status-dot').classList.add('text-brand-yellow', 'animate-spin');
 
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = localStream;
+            // Define cascading constraints descending from highest quality down to basic generic compatibility
+            const constraintsList = [
+                // Cascade 1: Requested facing mode, ideal FHD resolution, optionally with Audio
+                {
+                    video: {
+                        facingMode: currentFacingMode,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    audio: audioEnabled
+                },
+                // Cascade 2: Video only (FHD) with requested facing mode
+                {
+                    video: {
+                        facingMode: currentFacingMode,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    audio: false
+                },
+                // Cascade 3: HD video only with requested facing mode (highly compatible on mobile browsers)
+                {
+                    video: {
+                        facingMode: currentFacingMode,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                },
+                // Cascade 4: Standard default parameters without resolution lock
+                {
+                    video: {
+                        facingMode: currentFacingMode
+                    },
+                    audio: false
+                },
+                // Cascade 5: Catch-all basic configuration
+                {
+                    video: true,
+                    audio: false
+                }
+            ];
+
+            let success = false;
+            let lastError = null;
+
+            for (let i = 0; i < constraintsList.length; i++) {
+                let activeConstraints = { ...constraintsList[i] };
+                // Override audio constraint if globally toggled off
+                if (!audioEnabled) {
+                    activeConstraints.audio = false;
+                }
+
+                try {
+                    localStream = await navigator.mediaDevices.getUserMedia(activeConstraints);
+                    video.srcObject = localStream;
+                    success = true;
+
+                    // Fallback visual state sync if audio failed or wasn't provided
+                    const hasAudioTrack = localStream.getAudioTracks().length > 0;
+                    if (audioEnabled && !hasAudioTrack) {
+                        audioEnabled = false;
+                        chkAudio.checked = false;
+                        audioIcon.className = "fa-solid fa-microphone-slash text-red-500";
+                        audioBtn.classList.add('border-red-500/20');
+                    }
+                    break;
+                } catch (err) {
+                    lastError = err;
+                }
+            }
+
+            if (success) {
+                document.getElementById('cam-status-dot').classList.remove('animate-spin', 'text-brand-yellow');
+                document.getElementById('cam-status-dot').classList.add('text-green-500');
                 
                 // Track dynamic feedback on resolution loaded
                 video.onloadedmetadata = () => {
                     const videoWidth = video.videoWidth;
                     const videoHeight = video.videoHeight;
                     txtResolution.innerText = `${videoWidth} x ${videoHeight} (Auto)`;
-                    document.getElementById('cam-status-dot').classList.remove('animate-spin', 'text-brand-yellow');
-                    document.getElementById('cam-status-dot').classList.add('text-green-500');
                 };
 
                 showNotification("Lens connected successfully", "success");
-            } catch (err) {
-                console.error("Camera Access Error: ", err);
-                // Attempt fallback to video-only if audio block caused issues
-                if (audioEnabled) {
-                    showNotification("Audio initialization blocked. Re-attempting camera only.", "warning");
-                    audioEnabled = false;
-                    chkAudio.checked = false;
-                    audioIcon.className = "fa-solid fa-microphone-slash text-red-500";
-                    audioBtn.classList.add('border-red-500/20');
-                    startCamera();
-                } else {
-                    showNotification("Failed to lock media devices. Check permissions.", "error");
-                    document.getElementById('cam-status-dot').className = "fa-solid fa-circle-exmark text-red-500";
-                }
+            } else {
+                console.error("Camera Access Error: ", lastError);
+                document.getElementById('cam-status-dot').className = "fa-solid fa-circle-exmark text-red-500";
+                
+                // Render custom instructions inside Canvas viewfinder instead of blank screen
+                showCameraErrorOverlay(lastError);
             }
         }
 
@@ -623,6 +703,44 @@
                 localStream = null;
             }
         }
+
+        /* ==========================================
+           CAMERA ERROR UI OVERLAY MANAGEMENT
+           ========================================== */
+
+        function showCameraErrorOverlay(error) {
+            cameraErrorOverlay.classList.remove('hidden');
+            
+            let title = "Camera Access Blocked";
+            let desc = "Lumina cannot capture media. Please check your browser address bar's permissions icon to grant camera access.";
+            
+            if (error && (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError')) {
+                title = "Camera Hardware Not Found";
+                desc = "No physical camera or webcam was found on your system. Make sure your video input hardware is plugged in and recognized.";
+            } else if (error && (error.name === 'NotAllowedError' || error.name === 'PermissionDismissedError' || error.message.includes('dismissed') || error.message.includes('Permission'))) {
+                title = "Permission Blocked / Dismissed";
+                desc = "The camera access prompt was ignored, dismissed or blocked. Click the lock/camera icon in your address bar to reset permissions, then click below to try again.";
+            } else if (error && (error.name === 'NotReadableError' || error.name === 'TrackStartError')) {
+                title = "Camera Already In Use";
+                desc = "Another program, browser tab, or app (Zoom, Skype, Discord) is currently locking your lens. Close conflicting apps and retry.";
+            }
+            
+            errorOverlayTitle.innerText = title;
+            errorOverlayDesc.innerText = desc;
+        }
+
+        function hideCameraErrorOverlay() {
+            cameraErrorOverlay.classList.add('hidden');
+        }
+
+        // Retry and Help Button actions
+        btnRetryCamera.addEventListener('click', () => {
+            startCamera();
+        });
+
+        btnTroubleshoot.addEventListener('click', () => {
+            showNotification("Troubleshoot: Click the site security lock (🔒) in your browser search bar to toggle camera access.", "info");
+        });
 
         /* ==========================================
            INTERFACE / FILTER BUILDERS
