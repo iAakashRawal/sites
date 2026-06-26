@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lumina - Modern Camera Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            red: '#FF3B30',
+                            yellow: '#FFCC00',
+                            dark: '#0A0A0C',
+                        }
+                    },
+                    backdropBlur: {
+                        xs: '2px',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom styles to enhance the immersive camera system */
+        body {
+            background-color: #050505;
+            color: #f3f4f6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Scanline effect for video container */
+        .viewfinder-container::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+            opacity: 0.15;
+        }
+
+        /* Glassmorphic panels */
+        .glass-panel {
+            background: rgba(15, 15, 20, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-button {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.05);
+        }
+
+        .glass-button:active {
+            transform: scale(0.95);
+        }
+
+        /* Custom scrollbar for gallery list */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        /* Flash Animation */
+        @keyframes flashEffect {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        .flash-active {
+            animation: flashEffect 0.4s ease-out forwards;
+        }
+
+        /* Pulsing Record Indicator */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.9); }
+        }
+        .rec-pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Grid Layout lines */
+        .grid-line-h {
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.2);
+        }
+        .grid-line-v {
+            border-right: 1px dashed rgba(255, 255, 255, 0.2);
+        }
+
+        /* Apply dynamic filters based on CSS vars */
+        .filtered-view {
+            filter: var(--viewfinder-filter, none);
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col justify-between select-none overflow-hidden">
+
+    <!-- Flash Overlay Component -->
+    <div id="flash-overlay" class="fixed inset-0 bg-white z-50 pointer-events-none opacity-0"></div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container" class="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none w-full max-w-sm px-4"></div>
+
+    <!-- MAIN VIEWPORT CONTAINER (Full Screen Feel) -->
+    <div class="relative w-full h-full flex flex-col md:flex-row bg-brand-dark overflow-hidden">
+        
+        <!-- SIDEBAR / TOP SETTINGS BAR -->
+        <header class="glass-panel z-20 flex md:flex-col justify-between items-center p-3 md:py-6 md:px-4 md:h-full md:w-20 border-b md:border-b-0 md:border-r border-white/5">
+            <!-- Brand Logo / Lens Icon -->
+            <div class="flex items-center gap-2 md:flex-col md:gap-4">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-red to-orange-500 flex items-center justify-center shadow-lg shadow-brand-red/20">
+                    <i class="fa-solid fa-camera-retro text-white text-lg"></i>
+                </div>
+                <span class="hidden md:block text-[10px] tracking-[0.2em] font-bold text-white/40 uppercase">Lumina</span>
+            </div>
+
+            <!-- Control Buttons Center Group -->
+            <div class="flex md:flex-col items-center gap-3 my-auto">
+                <!-- Ratio Toggle -->
+                <button id="btn-ratio" class="glass-button w-10 h-10 rounded-full flex items-center justify-center text-white/90 text-sm" title="Aspect Ratio">
+                    <span class="font-bold text-[11px]" id="ratio-text">Cover</span>
+                </button>
+                
+                <!-- Grid Overlay Toggle -->
+                <button id="btn-grid" class="glass-button w-10 h-10 rounded-full flex items-center justify-center text-white/60 text-sm" title="Grid Lines">
+                    <i class="fa-solid fa-border-all"></i>
+                </button>
+
+                <!-- Audio Toggle -->
+                <button id="btn-audio" class="glass-button w-10 h-10 rounded-full flex items-center justify-center text-white/90 text-sm" title="Toggle Mic">
+                    <i class="fa-solid fa-microphone" id="audio-icon"></i>
+                </button>
+
+                <!-- Fullscreen Trigger -->
+                <button id="btn-fullscreen" class="glass-button w-10 h-10 rounded-full flex items-center justify-center text-white/80 text-sm" title="Fullscreen View">
+                    <i class="fa-solid fa-expand"></i>
+                </button>
+            </div>
+
+            <!-- Settings Button -->
+            <div class="flex items-center md:flex-col gap-2">
+                <button id="btn-settings" class="glass-button w-10 h-10 rounded-full flex items-center justify-center text-white/80" title="Settings">
+                    <i class="fa-solid fa-sliders"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- VIEWFINDER CORE ENGINE -->
+        <main class="relative flex-1 flex items-center justify-center bg-black/95 overflow-hidden viewfinder-container">
+            <!-- Stream Video element -->
+            <video id="video-stream" class="w-full h-full object-cover transition-all duration-300 filtered-view" autoplay playsinline muted></video>
+            
+            <!-- Grid Lines Overlay (Hidden by default) -->
+            <div id="grid-overlay" class="absolute inset-0 pointer-events-none z-10 grid grid-cols-3 grid-rows-3 hidden">
+                <div class="grid-line-r grid-line-v grid-line-h"></div>
+                <div class="grid-line-r grid-line-v grid-line-h"></div>
+                <div class="grid-line-r grid-line-h"></div>
+                <div class="grid-line-r grid-line-v grid-line-h"></div>
+                <div class="grid-line-r grid-line-v grid-line-h"></div>
+                <div class="grid-line-r grid-line-h"></div>
+                <div class="grid-line-r grid-line-v"></div>
+                <div class="grid-line-r grid-line-v"></div>
+                <div class="grid-line-r"></div>
+            </div>
+
+            <!-- REC / STATUS OVERLAY -->
+            <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2 pointer-events-none">
+                <div id="rec-badge" class="hidden items-center gap-2 px-3 py-1 bg-red-600/90 text-white rounded-full text-xs font-semibold tracking-wider uppercase backdrop-blur-md transition-all duration-300">
+                    <span class="w-2.5 h-2.5 rounded-full bg-white rec-pulse"></span>
+                    <span>REC</span>
+                    <span class="ml-1 opacity-70 border-l border-white/20 pl-2 font-mono" id="rec-timer">00:00</span>
+                </div>
+
+                <div id="active-filter-badge" class="hidden items-center gap-1.5 px-3 py-1 bg-black/60 border border-white/10 text-white/90 rounded-full text-[11px] font-medium tracking-wide backdrop-blur-md">
+                    <i class="fa-solid fa-wand-magic-sparkles text-brand-yellow"></i>
+                    <span id="active-filter-name">Classic</span>
+                </div>
+            </div>
+
+            <!-- CAMERA SOURCE SELECTOR (Top Center Overlay) -->
+            <div class="absolute top-4 right-4 z-10 max-w-xs flex gap-2">
+                <div class="glass-panel rounded-xl px-3 py-1.5 flex items-center gap-2 text-white text-xs select-none shadow-2xl">
+                    <i class="fa-solid fa-circle-notch text-green-500 animate-spin mr-1" id="cam-status-dot"></i>
+                    <select id="camera-selector" class="bg-transparent text-white border-none focus:outline-none focus:ring-0 max-w-[130px] pr-4 font-medium text-xs cursor-pointer">
+                        <option value="user" class="bg-brand-dark">Front Camera</option>
+                        <option value="environment" class="bg-brand-dark">Back Camera</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- BOTTOM HUD FILTER STRIP / MODE SELECTOR (Fills bottom on desktop or fits overlays) -->
+            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 w-full max-w-lg px-4 flex flex-col gap-4 items-center">
+                <!-- Live Filters Slider -->
+                <div id="filter-strip" class="w-full glass-panel py-2 px-3 rounded-2xl flex gap-3 overflow-x-auto custom-scrollbar shadow-2xl">
+                    <!-- Standard Filters generated dynamically in JS -->
+                </div>
+
+                <!-- Capture Modes (Photo / Video Switcher) -->
+                <div class="glass-panel p-1 rounded-full flex gap-1 shadow-2xl">
+                    <button id="mode-photo" class="px-5 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase transition-all duration-300 bg-white text-black shadow-lg">
+                        PHOTO
+                    </button>
+                    <button id="mode-video" class="px-5 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase transition-all duration-300 text-white/60 hover:text-white">
+                        VIDEO
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- RIGHT PANEL / BOTTOM UTILITY (iOS style Control Deck) -->
+        <section class="glass-panel z-20 flex md:flex-col justify-around md:justify-between items-center p-4 md:py-8 md:px-6 md:h-full md:w-32 border-t md:border-t-0 md:border-l border-white/5">
+            
+            <!-- Gallery Slot / Last captured media thumbnail -->
+            <div class="flex items-center justify-center md:order-1">
+                <button id="btn-gallery" class="group relative w-12 h-12 md:w-16 md:h-16 rounded-2xl overflow-hidden border-2 border-white/10 hover:border-brand-yellow transition-all duration-300 bg-black/40 flex items-center justify-center" title="Open Gallery">
+                    <div id="gallery-empty" class="text-white/30 text-lg transition-transform group-hover:scale-110">
+                        <i class="fa-regular fa-images"></i>
+                    </div>
+                    <img id="gallery-thumb" class="w-full h-full object-cover hidden" alt="Captured Thumbnail">
+                    <span id="gallery-badge" class="absolute -top-1.5 -right-1.5 bg-brand-red text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-lg hidden">0</span>
+                </button>
+            </div>
+
+            <!-- PRIMARY SHUTTER BUTTON (THE TRIGGER) -->
+            <div class="flex items-center justify-center md:order-2">
+                <div class="relative w-20 h-20 md:w-24 md:h-24 flex items-center justify-center rounded-full border-4 border-white/80 p-1">
+                    <button id="btn-shutter" class="w-full h-full rounded-full bg-white transition-all duration-300 focus:outline-none flex items-center justify-center hover:scale-95 active:scale-90 shadow-2xl" title="Capture / Record">
+                        <!-- Shutter Internal Content Dynamically updated: e.g. solid red/white square/circle -->
+                        <div id="shutter-inner" class="w-[85%] h-[85%] rounded-full bg-white transition-all duration-300"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Media Options Panel (Flip / Extra Tools) -->
+            <div class="flex items-center md:flex-col gap-4 md:order-3">
+                <!-- Flip Camera Button -->
+                <button id="btn-flip" class="glass-button w-12 h-12 rounded-full flex items-center justify-center text-white/90" title="Flip Camera">
+                    <i class="fa-solid fa-arrows-rotate text-lg transition-transform hover:rotate-180 duration-500"></i>
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <!-- GALLERY MODAL (Overlay) -->
+    <div id="gallery-modal" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-lg flex flex-col justify-between hidden">
+        <!-- Gallery Header -->
+        <header class="p-4 flex justify-between items-center border-b border-white/10">
+            <h2 class="text-white font-bold tracking-wider text-sm flex items-center gap-2">
+                <i class="fa-solid fa-images text-brand-yellow"></i>
+                STUDIO GALLERY
+            </h2>
+            <button id="btn-gallery-close" class="text-white/60 hover:text-white glass-button p-2.5 rounded-xl flex items-center justify-center">
+                <i class="fa-solid fa-times text-lg"></i>
+            </button>
+        </header>
+
+        <!-- Gallery Grid Body -->
+        <main class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+            <div id="gallery-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <!-- Populated dynamically via JS -->
+            </div>
+            <!-- Empty state in gallery -->
+            <div id="gallery-empty-state" class="flex flex-col items-center justify-center h-[50vh] text-center hidden">
+                <div class="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
+                    <i class="fa-regular fa-image text-white/20 text-3xl"></i>
+                </div>
+                <h3 class="text-white/80 font-semibold mb-1">No captured assets yet</h3>
+                <p class="text-white/40 text-xs">Photos & recordings you take will appear here.</p>
+            </div>
+        </main>
+
+        <!-- Gallery Footer Controls -->
+        <footer class="p-4 border-t border-white/10 flex justify-between gap-4 items-center">
+            <button id="btn-clear-gallery" class="px-4 py-2 border border-red-500/20 text-red-500 hover:bg-red-500/10 active:scale-95 transition-all text-xs font-semibold rounded-xl">
+                Clear All Assets
+            </button>
+            <span class="text-white/40 text-[11px]" id="gallery-count-text">0 items stored in local session</span>
+        </footer>
+    </div>
+
+    <!-- MEDIA FULL SCREEN INSPECTOR MODAL -->
+    <div id="inspector-modal" class="fixed inset-0 z-50 bg-black/98 flex flex-col justify-between hidden">
+        <!-- Header -->
+        <header class="p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
+            <div class="text-xs text-white/50" id="inspector-timestamp">2026-06-26 18:03:00</div>
+            <button id="btn-inspector-close" class="text-white/80 hover:text-white glass-button p-2 rounded-lg">
+                <i class="fa-solid fa-chevron-left"></i> Back to Gallery
+            </button>
+        </header>
+
+        <!-- Content Frame -->
+        <div class="flex-1 flex items-center justify-center p-4">
+            <div id="inspector-content-frame" class="max-w-full max-h-[75vh] rounded-xl overflow-hidden shadow-2xl relative border border-white/5">
+                <!-- Dynamically populated with img or video elements -->
+            </div>
+        </div>
+
+        <!-- Toolbar / Operations -->
+        <footer class="p-6 bg-gradient-to-t from-black/80 to-transparent flex justify-center gap-6">
+            <!-- Share / Download -->
+            <button id="btn-inspector-download" class="glass-button px-5 py-3 rounded-2xl flex items-center gap-2 text-white font-medium text-xs">
+                <i class="fa-solid fa-download text-green-400"></i> Download
+            </button>
+            <!-- Delete -->
+            <button id="btn-inspector-delete" class="glass-button px-5 py-3 rounded-2xl flex items-center gap-2 text-red-400 hover:text-white hover:bg-red-500/20 active:scale-95 transition-all font-medium text-xs">
+                <i class="fa-solid fa-trash-can"></i> Delete
+            </button>
+        </footer>
+    </div>
+
+    <!-- SETTINGS PANEL / DEV PANEL (Overlay modal) -->
+    <div id="settings-modal" class="fixed inset-0 z-40 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-md rounded-3xl p-6 text-white shadow-2xl relative">
+            <button id="btn-settings-close" class="absolute top-4 right-4 text-white/40 hover:text-white">
+                <i class="fa-solid fa-times text-lg"></i>
+            </button>
+            <h3 class="text-lg font-bold mb-4 tracking-wider text-brand-yellow flex items-center gap-2">
+                <i class="fa-solid fa-cog"></i> STUDIO SETTINGS
+            </h3>
+
+            <div class="space-y-4">
+                <!-- Video Resolution Info -->
+                <div class="p-3 bg-white/5 rounded-2xl border border-white/5">
+                    <span class="text-[10px] text-white/40 block font-bold tracking-widest uppercase">Stream Resolution</span>
+                    <span id="txt-resolution" class="text-sm font-semibold text-white/95">1920 x 1080 (FHD)</span>
+                </div>
+
+                <!-- Custom Hotkeys Guide / Security Warning -->
+                <div class="p-3 bg-white/5 rounded-2xl border border-white/5 space-y-2">
+                    <span class="text-[10px] text-white/40 block font-bold tracking-widest uppercase">Security Framework</span>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-white/60">Source Code Block (Ctrl+U)</span>
+                        <span class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-md font-mono font-bold text-[10px]">ACTIVE</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-white/60">DevTools Block (F12)</span>
+                        <span class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-md font-mono font-bold text-[10px]">ACTIVE</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-white/60">Right-Click Prevention</span>
+                        <span class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-md font-mono font-bold text-[10px]">ACTIVE</span>
+                    </div>
+                </div>
+
+                <!-- Capture Options -->
+                <div>
+                    <label class="text-[10px] text-white/40 block font-bold tracking-widest uppercase mb-1.5">Capture Format</label>
+                    <select id="select-format" class="w-full bg-white/10 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-brand-yellow border-none">
+                        <option value="image/png" class="bg-brand-dark">PNG (High Quality)</option>
+                        <option value="image/jpeg" class="bg-brand-dark">JPEG (Compact)</option>
+                        <option value="image/webp" class="bg-brand-dark">WEBP (Modern Compression)</option>
+                    </select>
+                </div>
+
+                <!-- Audio Output Configuration -->
+                <div class="flex items-center justify-between p-1">
+                    <div>
+                        <span class="text-xs font-semibold">Enable Audio Recording</span>
+                        <span class="text-[10px] text-white/40 block">Requires microphone permission</span>
+                    </div>
+                    <input type="checkbox" id="chk-audio" checked class="w-4 h-4 accent-brand-yellow rounded focus:ring-0">
+                </div>
+            </div>
+
+            <button id="btn-save-settings" class="w-full mt-6 py-2.5 bg-white text-black hover:bg-brand-yellow hover:text-black font-semibold rounded-xl text-xs tracking-wider uppercase transition-all duration-300">
+                Apply Settings
+            </button>
+        </div>
+    </div>
+
+
+    <script>
+        /* ==========================================
+           SECURITY & REVELATORY COUNTERMEASURES
+           Requirements: Disable Ctrl+U for source code, F12, Right-Click, and notify custom modals.
+           ========================================== */
+        
+        // Custom elegant notification toast system instead of raw blocking alerts
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let colorClass = 'border-white/10 text-white';
+            let icon = '<i class="fa-solid fa-info-circle text-blue-400"></i>';
+            if (type === 'warning') {
+                colorClass = 'border-amber-500/20 text-amber-300 bg-amber-500/5';
+                icon = '<i class="fa-solid fa-triangle-exclamation text-brand-yellow"></i>';
+            } else if (type === 'success') {
+                colorClass = 'border-green-500/20 text-green-300 bg-green-500/5';
+                icon = '<i class="fa-solid fa-circle-check text-green-400"></i>';
+            } else if (type === 'error') {
+                colorClass = 'border-red-500/20 text-red-300 bg-red-500/5';
+                icon = '<i class="fa-solid fa-circle-xmark text-red-400"></i>';
+            }
+
+            toast.className = `glass-panel flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-2xl transition-all duration-300 transform translate-y-2 opacity-0 text-xs font-medium ${colorClass}`;
+            toast.innerHTML = `
+                ${icon}
+                <div class="flex-1">${message}</div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            // Remove automatically
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // Disable standard context/right-click menu
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            showNotification("Context menu disabled in Camera Mode.", "warning");
+        });
+
+        // Key interception array
+        document.addEventListener('keydown', function(e) {
+            // Prevent Ctrl+U or Cmd+Opt+U (Source code viewer check)
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
+                e.preventDefault();
+                showNotification("Source Code inspection is restricted on this workspace.", "warning");
+                return false;
+            }
+
+            // Prevent F12 (Developer console check)
+            if (e.key === 'F12') {
+                e.preventDefault();
+                showNotification("Developer tools access restricted.", "warning");
+                return false;
+            }
+
+            // Prevent Ctrl+Shift+I / Cmd+Opt+I (Developer Inspector check)
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.key === 'I')) {
+                e.preventDefault();
+                showNotification("Inspector access restricted.", "warning");
+                return false;
+            }
+
+            // Prevent Ctrl+Shift+J / Cmd+Opt+J (Console check)
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.key === 'J')) {
+                e.preventDefault();
+                showNotification("Console logging mode restricted.", "warning");
+                return false;
+            }
+        });
+
+
+        /* ==========================================
+           CAMERA CORE STATE AND DRIVERS
+           ========================================== */
+        
+        const video = document.getElementById('video-stream');
+        const shutterBtn = document.getElementById('btn-shutter');
+        const shutterInner = document.getElementById('shutter-inner');
+        const modePhotoBtn = document.getElementById('mode-photo');
+        const modeVideoBtn = document.getElementById('mode-video');
+        const cameraSelector = document.getElementById('camera-selector');
+        const gridBtn = document.getElementById('btn-grid');
+        const gridOverlay = document.getElementById('grid-overlay');
+        const ratioBtn = document.getElementById('btn-ratio');
+        const ratioText = document.getElementById('ratio-text');
+        const audioBtn = document.getElementById('btn-audio');
+        const audioIcon = document.getElementById('audio-icon');
+        const fullscreenBtn = document.getElementById('btn-fullscreen');
+        const filterStrip = document.getElementById('filter-strip');
+        const activeFilterBadge = document.getElementById('active-filter-badge');
+        const activeFilterName = document.getElementById('active-filter-name');
+        
+        const galleryBtn = document.getElementById('btn-gallery');
+        const galleryEmpty = document.getElementById('gallery-empty');
+        const galleryThumb = document.getElementById('gallery-thumb');
+        const galleryBadge = document.getElementById('gallery-badge');
+        
+        const recBadge = document.getElementById('rec-badge');
+        const recTimer = document.getElementById('rec-timer');
+        const flipBtn = document.getElementById('btn-flip');
+        const flashOverlay = document.getElementById('flash-overlay');
+
+        // Gallery Modals
+        const galleryModal = document.getElementById('gallery-modal');
+        const btnGalleryClose = document.getElementById('btn-gallery-close');
+        const galleryGrid = document.getElementById('gallery-grid');
+        const galleryEmptyState = document.getElementById('gallery-empty-state');
+        const btnClearGallery = document.getElementById('btn-clear-gallery');
+        const galleryCountText = document.getElementById('gallery-count-text');
+
+        // Inspector Modal
+        const inspectorModal = document.getElementById('inspector-modal');
+        const btnInspectorClose = document.getElementById('btn-inspector-close');
+        const inspectorContentFrame = document.getElementById('inspector-content-frame');
+        const btnInspectorDownload = document.getElementById('btn-inspector-download');
+        const btnInspectorDelete = document.getElementById('btn-inspector-delete');
+        const inspectorTimestamp = document.getElementById('inspector-timestamp');
+
+        // Settings Modal
+        const settingsModal = document.getElementById('settings-modal');
+        const btnSettings = document.getElementById('btn-settings');
+        const btnSettingsClose = document.getElementById('btn-settings-close');
+        const btnSaveSettings = document.getElementById('btn-save-settings');
+        const chkAudio = document.getElementById('chk-audio');
+        const selectFormat = document.getElementById('select-format');
+        const txtResolution = document.getElementById('txt-resolution');
+
+        // Core variables
+        let localStream = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let isRecording = false;
+        let recordingInterval = null;
+        let recordingSeconds = 0;
+        
+        let currentMode = 'photo'; // 'photo' or 'video'
+        let currentFacingMode = 'user'; // 'user' or 'environment'
+        let currentAspectMode = 'cover'; // 'cover' or 'contain'
+        let showGrid = false;
+        let audioEnabled = true;
+        let selectedFormat = 'image/png';
+        let activeFilterCSS = 'none';
+        let gallery = [];
+        let selectedInspectorItem = null;
+
+        // Custom Presets for Viewfinder filter strip
+        const filters = [
+            { name: 'Normal', css: 'none', previewStyle: 'filter: none;' },
+            { name: 'Noir (B&W)', css: 'grayscale(1) contrast(1.25) brightness(0.95)', previewStyle: 'filter: grayscale(1) contrast(1.2) brightness(0.95);' },
+            { name: 'Vintage', css: 'sepia(0.65) contrast(1.1) saturate(1.1)', previewStyle: 'filter: sepia(0.6) contrast(1.1);' },
+            { name: 'Chrome', css: 'saturate(1.75) contrast(1.1) brightness(1.05)', previewStyle: 'filter: saturate(1.6) contrast(1.1);' },
+            { name: 'Warm Sunset', css: 'sepia(0.3) saturate(1.4) hue-rotate(-15deg)', previewStyle: 'filter: sepia(0.2) saturate(1.3) hue-rotate(-15deg);' },
+            { name: 'Cold Glaze', css: 'contrast(1.1) hue-rotate(15deg) saturate(1.1) brightness(0.95)', previewStyle: 'filter: hue-rotate(15deg) brightness(0.95);' },
+            { name: 'Cyberpunk', css: 'hue-rotate(140deg) saturate(2) brightness(1.1)', previewStyle: 'filter: hue-rotate(140deg) saturate(1.8) brightness(1.1);' },
+            { name: 'Dreamy', css: 'brightness(1.15) saturate(0.9) blur(0.5px) contrast(0.9)', previewStyle: 'filter: brightness(1.1) saturate(0.9) blur(0.5px);' }
+        ];
+
+        /* ==========================================
+           CAMERA STREAM INITIALIZATION
+           ========================================== */
+        
+        async function startCamera() {
+            // Stop any existing stream before opening a new one
+            stopCamera();
+
+            const constraints = {
+                video: {
+                    facingMode: currentFacingMode,
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                },
+                audio: audioEnabled
+            };
+
+            document.getElementById('cam-status-dot').classList.remove('text-green-500');
+            document.getElementById('cam-status-dot').classList.add('text-brand-yellow', 'animate-spin');
+
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = localStream;
+                
+                // Track dynamic feedback on resolution loaded
+                video.onloadedmetadata = () => {
+                    const videoWidth = video.videoWidth;
+                    const videoHeight = video.videoHeight;
+                    txtResolution.innerText = `${videoWidth} x ${videoHeight} (Auto)`;
+                    document.getElementById('cam-status-dot').classList.remove('animate-spin', 'text-brand-yellow');
+                    document.getElementById('cam-status-dot').classList.add('text-green-500');
+                };
+
+                showNotification("Lens connected successfully", "success");
+            } catch (err) {
+                console.error("Camera Access Error: ", err);
+                // Attempt fallback to video-only if audio block caused issues
+                if (audioEnabled) {
+                    showNotification("Audio initialization blocked. Re-attempting camera only.", "warning");
+                    audioEnabled = false;
+                    chkAudio.checked = false;
+                    audioIcon.className = "fa-solid fa-microphone-slash text-red-500";
+                    audioBtn.classList.add('border-red-500/20');
+                    startCamera();
+                } else {
+                    showNotification("Failed to lock media devices. Check permissions.", "error");
+                    document.getElementById('cam-status-dot').className = "fa-solid fa-circle-exmark text-red-500";
+                }
+            }
+        }
+
+        function stopCamera() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+        }
+
+        /* ==========================================
+           INTERFACE / FILTER BUILDERS
+           ========================================== */
+
+        function buildFilters() {
+            filterStrip.innerHTML = '';
+            filters.forEach((filter, index) => {
+                const isSelected = activeFilterCSS === filter.css;
+                const filterItem = document.createElement('button');
+                filterItem.className = `flex-none flex flex-col items-center gap-1.5 focus:outline-none transition-all duration-300 p-1 rounded-xl group ${isSelected ? 'scale-105 bg-white/10' : 'hover:scale-102 bg-white/5'}`;
+                
+                // Live/static filter preview node
+                filterItem.innerHTML = `
+                    <div class="w-10 h-10 rounded-lg overflow-hidden border ${isSelected ? 'border-brand-yellow' : 'border-white/10'} bg-neutral-800 flex items-center justify-center" style="${filter.previewStyle}">
+                        <div class="w-4 h-4 rounded-full bg-gradient-to-tr from-orange-400 to-indigo-600"></div>
+                    </div>
+                    <span class="text-[9px] font-semibold text-white/70 truncate w-14 text-center ${isSelected ? 'text-brand-yellow font-bold' : ''}">${filter.name}</span>
+                `;
+
+                filterItem.addEventListener('click', () => {
+                    setFilter(filter.css, filter.name);
+                });
+                filterStrip.appendChild(filterItem);
+            });
+        }
+
+        function setFilter(cssValue, filterName) {
+            activeFilterCSS = cssValue;
+            video.style.setProperty('--viewfinder-filter', cssValue);
+            
+            // Handle indicator badge visibility
+            if (cssValue === 'none') {
+                activeFilterBadge.classList.add('hidden');
+            } else {
+                activeFilterBadge.classList.remove('hidden');
+                activeFilterName.innerText = filterName;
+            }
+
+            // Redraw filter options
+            buildFilters();
+        }
+
+        /* ==========================================
+           MODES SWITCHER (PHOTO VS VIDEO)
+           ========================================== */
+
+        function setMode(mode) {
+            if (isRecording) {
+                showNotification("Cannot switch modes during recording!", "warning");
+                return;
+            }
+            
+            currentMode = mode;
+            if (mode === 'photo') {
+                modePhotoBtn.className = "px-5 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase transition-all duration-300 bg-white text-black shadow-lg";
+                modeVideoBtn.className = "px-5 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase transition-all duration-300 text-white/60 hover:text-white";
+                shutterInner.className = "w-[85%] h-[85%] rounded-full bg-white transition-all duration-300";
+            } else {
+                modePhotoBtn.className = "px-5 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase transition-all duration-300 text-white/60 hover:text-white";
+                modeVideoBtn.className = "px-5 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase transition-all duration-300 bg-brand-red text-white shadow-lg";
+                shutterInner.className = "w-[60%] h-[60%] rounded-lg bg-brand-red transition-all duration-300";
+            }
+        }
+
+        /* ==========================================
+           TRIGGER (CAPTURE / RECORD SYSTEM)
+           ========================================== */
+
+        async function triggerShutter() {
+            if (currentMode === 'photo') {
+                capturePhoto();
+            } else {
+                toggleRecording();
+            }
+        }
+
+        function flashViewfinder() {
+            flashOverlay.classList.remove('flash-active');
+            void flashOverlay.offsetWidth; // Trigger DOM reflow to restart animation
+            flashOverlay.classList.add('flash-active');
+        }
+
+        function capturePhoto() {
+            if (!localStream) {
+                showNotification("Camera engine is inactive", "error");
+                return;
+            }
+
+            flashViewfinder();
+
+            // Setup capture Canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+
+            // Apply active camera aspect ratio filters if any
+            ctx.filter = activeFilterCSS;
+            
+            // Draw currently loaded video frame
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Extract file data format
+            const dataUrl = canvas.toDataURL(selectedFormat);
+            
+            const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+            const newItem = {
+                id: crypto.randomUUID(),
+                type: 'image',
+                url: dataUrl,
+                timestamp: timestamp
+            };
+
+            gallery.unshift(newItem);
+            updateGalleryUI();
+            showNotification("Photo saved to virtual deck", "success");
+        }
+
+        function toggleRecording() {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        }
+
+        function startRecording() {
+            if (!localStream) {
+                showNotification("Camera engine is inactive", "error");
+                return;
+            }
+
+            recordedChunks = [];
+            let options = { mimeType: 'video/webm; codecs=vp9' };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options = { mimeType: 'video/webm; codecs=vp8' };
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    options = { mimeType: 'video/webm' };
+                }
+            }
+
+            try {
+                mediaRecorder = new MediaRecorder(localStream, options);
+            } catch (err) {
+                console.error("Error creating MediaRecorder:", err);
+                showNotification("Encoding codecs not supported by your viewport environment.", "error");
+                return;
+            }
+
+            mediaRecorder.ondataavailable = function(e) {
+                if (e.data && e.data.size > 0) {
+                    recordedChunks.push(e.data);
+                }
+            };
+
+            mediaRecorder.onstop = function() {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const videoURL = URL.createObjectURL(blob);
+                const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+                
+                const newItem = {
+                    id: crypto.randomUUID(),
+                    type: 'video',
+                    url: videoURL,
+                    timestamp: timestamp
+                };
+
+                gallery.unshift(newItem);
+                updateGalleryUI();
+                showNotification("Video recording processed!", "success");
+            };
+
+            // Start Recording process
+            mediaRecorder.start();
+            isRecording = true;
+            
+            // Reset and start timer
+            recordingSeconds = 0;
+            recTimer.innerText = "00:00";
+            recBadge.classList.remove('hidden');
+            recBadge.classList.add('flex');
+
+            recordingInterval = setInterval(() => {
+                recordingSeconds++;
+                const mins = String(Math.floor(recordingSeconds / 60)).padStart(2, '0');
+                const secs = String(recordingSeconds % 60).padStart(2, '0');
+                recTimer.innerText = `${mins}:${secs}`;
+            }, 1000);
+
+            // Pulse animation for recording shutter state
+            shutterInner.classList.add('rec-pulse');
+            shutterBtn.classList.add('border-brand-red');
+            showNotification("Recording video live...", "info");
+        }
+
+        function stopRecording() {
+            if (!mediaRecorder || !isRecording) return;
+
+            mediaRecorder.stop();
+            isRecording = false;
+
+            // Clear timer processes
+            clearInterval(recordingInterval);
+            recBadge.classList.add('hidden');
+            recBadge.classList.remove('flex');
+            
+            shutterInner.classList.remove('rec-pulse');
+            shutterBtn.classList.remove('border-brand-red');
+        }
+
+        /* ==========================================
+           GALLERY ENGINE & DOM MANIPULATIONS
+           ========================================== */
+
+        function updateGalleryUI() {
+            if (gallery.length === 0) {
+                galleryThumb.classList.add('hidden');
+                galleryEmpty.classList.remove('hidden');
+                galleryBadge.classList.add('hidden');
+                galleryEmptyState.classList.remove('hidden');
+                galleryGrid.innerHTML = '';
+            } else {
+                // Set last item as thumbnail
+                const lastItem = gallery[0];
+                if (lastItem.type === 'image') {
+                    galleryThumb.src = lastItem.url;
+                } else {
+                    // Create simple generic icon for video thumbnails inside small viewport
+                    galleryThumb.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23121212'/><circle cx='50' cy='50' r='20' fill='%23FF3B30'/><polygon points='45,40 60,50 45,60' fill='white'/></svg>";
+                }
+                galleryThumb.classList.remove('hidden');
+                galleryEmpty.classList.add('hidden');
+
+                // Gallery Count Badge Update
+                galleryBadge.innerText = gallery.length;
+                galleryBadge.classList.remove('hidden');
+
+                // Generate Grid contents
+                galleryEmptyState.classList.add('hidden');
+                galleryGrid.innerHTML = '';
+
+                gallery.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = "group relative aspect-square rounded-2xl overflow-hidden border border-white/5 bg-neutral-900 cursor-pointer shadow-lg hover:border-brand-yellow/50 transition-all duration-300";
+                    
+                    let innerMarkup = '';
+                    if (item.type === 'image') {
+                        innerMarkup = `<img src="${item.url}" class="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" alt="Capture">`;
+                    } else {
+                        innerMarkup = `
+                            <div class="relative w-full h-full flex items-center justify-center bg-black/60">
+                                <video src="${item.url}" class="absolute inset-0 w-full h-full object-cover opacity-60"></video>
+                                <div class="z-10 w-10 h-10 rounded-full bg-brand-red/90 flex items-center justify-center text-white text-xs shadow-lg">
+                                    <i class="fa-solid fa-play ml-0.5"></i>
+                                </div>
+                                <span class="absolute bottom-2 right-2 text-[9px] bg-black/70 px-1.5 py-0.5 rounded font-mono text-white/90">REC</span>
+                            </div>
+                        `;
+                    }
+
+                    card.innerHTML = `
+                        ${innerMarkup}
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2.5">
+                            <span class="text-[9px] text-white/80 truncate font-mono">${item.timestamp}</span>
+                        </div>
+                    `;
+
+                    card.addEventListener('click', () => {
+                        openInspector(item);
+                    });
+
+                    galleryGrid.appendChild(card);
+                });
+            }
+
+            galleryCountText.innerText = `${gallery.length} items stored in local memory`;
+        }
+
+        function openInspector(item) {
+            selectedInspectorItem = item;
+            inspectorTimestamp.innerText = item.timestamp;
+            inspectorContentFrame.innerHTML = '';
+
+            if (item.type === 'image') {
+                const img = document.createElement('img');
+                img.src = item.url;
+                img.className = "max-w-full max-h-[75vh] object-contain";
+                inspectorContentFrame.appendChild(img);
+            } else {
+                const videoEl = document.createElement('video');
+                videoEl.src = item.url;
+                videoEl.controls = true;
+                videoEl.autoplay = true;
+                videoEl.className = "max-w-full max-h-[75vh]";
+                inspectorContentFrame.appendChild(videoEl);
+            }
+
+            inspectorModal.classList.remove('hidden');
+        }
+
+        function closeInspector() {
+            inspectorModal.classList.add('hidden');
+            // Pause any playing videos
+            const activeVideo = inspectorContentFrame.querySelector('video');
+            if (activeVideo) {
+                activeVideo.pause();
+            }
+            selectedInspectorItem = null;
+        }
+
+        function deleteSelectedInspectorItem() {
+            if (!selectedInspectorItem) return;
+
+            gallery = gallery.filter(item => item.id !== selectedInspectorItem.id);
+            updateGalleryUI();
+            closeInspector();
+            showNotification("Item purged successfully.", "success");
+        }
+
+        function downloadSelectedInspectorItem() {
+            if (!selectedInspectorItem) return;
+
+            const a = document.createElement('a');
+            a.href = selectedInspectorItem.url;
+            a.download = selectedInspectorItem.type === 'image' 
+                ? `Lumina_Shot_${Date.now()}.png` 
+                : `Lumina_Clip_${Date.now()}.webm`;
+            
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showNotification("File download initiated", "success");
+        }
+
+
+        /* ==========================================
+           BINDINGS / ACTIONS / EVENT LISTENERS
+           ========================================== */
+
+        // Capture Mode Selectors
+        modePhotoBtn.addEventListener('click', () => setMode('photo'));
+        modeVideoBtn.addEventListener('click', () => setMode('video'));
+
+        // Shutter Action
+        shutterBtn.addEventListener('click', triggerShutter);
+
+        // Aspect Ratio Modes Toggle
+        ratioBtn.addEventListener('click', () => {
+            if (currentAspectMode === 'cover') {
+                currentAspectMode = 'contain';
+                video.className = "w-full h-full object-contain transition-all duration-300 filtered-view";
+                ratioText.innerText = "Fit";
+                showNotification("Switched to dynamic letterbox layout", "info");
+            } else {
+                currentAspectMode = 'cover';
+                video.className = "w-full h-full object-cover transition-all duration-300 filtered-view";
+                ratioText.innerText = "Cover";
+                showNotification("Switched to fill-screen viewport layout", "info");
+            }
+        });
+
+        // Grid Toggle overlay
+        gridBtn.addEventListener('click', () => {
+            showGrid = !showGrid;
+            if (showGrid) {
+                gridOverlay.classList.remove('hidden');
+                gridBtn.classList.remove('text-white/60');
+                gridBtn.classList.add('text-brand-yellow', 'bg-white/15');
+                showNotification("Alignment grid active", "info");
+            } else {
+                gridOverlay.classList.add('hidden');
+                gridBtn.classList.remove('text-brand-yellow', 'bg-white/15');
+                gridBtn.classList.add('text-white/60');
+            }
+        });
+
+        // Toggle Audio Sources
+        audioBtn.addEventListener('click', () => {
+            audioEnabled = !audioEnabled;
+            chkAudio.checked = audioEnabled;
+            updateAudioState();
+        });
+
+        function updateAudioState() {
+            if (audioEnabled) {
+                audioIcon.className = "fa-solid fa-microphone text-green-400";
+                audioBtn.classList.remove('border-red-500/20');
+                showNotification("Audio enabled for next recording clip", "info");
+            } else {
+                audioIcon.className = "fa-solid fa-microphone-slash text-red-400";
+                audioBtn.classList.add('border-red-500/20');
+                showNotification("Audio muted for recordings", "warning");
+            }
+            startCamera();
+        }
+
+        // Camera facing Mode switcher (Back vs front)
+        cameraSelector.addEventListener('change', (e) => {
+            currentFacingMode = e.target.value;
+            startCamera();
+        });
+
+        flipBtn.addEventListener('click', () => {
+            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+            cameraSelector.value = currentFacingMode;
+            startCamera();
+        });
+
+        // Fullscreen Mode Handler
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().then(() => {
+                    fullscreenBtn.innerHTML = '<i class="fa-solid fa-compress text-brand-yellow"></i>';
+                }).catch(err => {
+                    showNotification("Fullscreen API is restricted by iframe container", "warning");
+                });
+            } else {
+                document.exitFullscreen();
+                fullscreenBtn.innerHTML = '<i class="fa-solid fa-expand"></i>';
+            }
+        });
+
+        // Detect outside Fullscreen changes
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                fullscreenBtn.innerHTML = '<i class="fa-solid fa-expand"></i>';
+            }
+        });
+
+        /* ==========================================
+           MODALS EVENT CONTROLLERS
+           ========================================== */
+
+        // Gallery Modal toggles
+        galleryBtn.addEventListener('click', () => {
+            galleryModal.classList.remove('hidden');
+        });
+        btnGalleryClose.addEventListener('click', () => {
+            galleryModal.classList.add('hidden');
+        });
+
+        // Clear Gallery
+        btnClearGallery.addEventListener('click', () => {
+            if (confirm && !confirm("Permanently wipe your current virtual camera storage?")) return;
+            gallery = [];
+            updateGalleryUI();
+            galleryModal.classList.add('hidden');
+            showNotification("Studio memory cleared.", "info");
+        });
+
+        // Inspector controls
+        btnInspectorClose.addEventListener('click', closeInspector);
+        btnInspectorDelete.addEventListener('click', deleteSelectedInspectorItem);
+        btnInspectorDownload.addEventListener('click', downloadSelectedInspectorItem);
+
+        // Settings Modal triggers
+        btnSettings.addEventListener('click', () => {
+            settingsModal.classList.remove('hidden');
+        });
+        btnSettingsClose.addEventListener('click', () => {
+            settingsModal.classList.add('hidden');
+        });
+        btnSaveSettings.addEventListener('click', () => {
+            audioEnabled = chkAudio.checked;
+            selectedFormat = selectFormat.value;
+            settingsModal.classList.add('hidden');
+            updateAudioState();
+            showNotification("Configuration presets applied", "success");
+        });
+
+        /* ==========================================
+           WINDOW LOAD ENGINE START
+           ========================================== */
+        window.onload = function() {
+            startCamera();
+            buildFilters();
+            updateGalleryUI();
+            
+            // Log security warnings in the application load
+            console.log("%cLumina Lens Secure Studio active.", "color: #FFCC00; font-weight: bold; font-size: 14px;");
+        };
+    </script>
+</body>
+</html>
