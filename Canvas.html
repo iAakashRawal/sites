@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HTML Canvas</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #f3f4f6;
+      font-family: Arial, sans-serif;
+    }
+
+    .canvas-wrapper {
+      width: 90%;
+      max-width: 1000px;
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    button,
+    input {
+      cursor: pointer;
+    }
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      background: #111827;
+      color: white;
+    }
+
+    button:hover {
+      background: #374151;
+    }
+
+    canvas {
+      width: 100%;
+      height: 500px;
+      display: block;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      background: white;
+      cursor: crosshair;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="canvas-wrapper">
+
+    <div class="toolbar">
+      <label>
+        Color:
+        <input type="color" id="colorPicker" value="#000000">
+      </label>
+
+      <label>
+        Size:
+        <input type="range" id="sizePicker" min="1" max="50" value="5">
+      </label>
+
+      <button id="clearBtn">Clear</button>
+      <button id="downloadBtn">Download</button>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+  </div>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const colorPicker = document.getElementById("colorPicker");
+    const sizePicker = document.getElementById("sizePicker");
+    const clearBtn = document.getElementById("clearBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
+
+    let isDrawing = false;
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+
+      const oldCanvas = document.createElement("canvas");
+      oldCanvas.width = canvas.width;
+      oldCanvas.height = canvas.height;
+
+      if (canvas.width && canvas.height) {
+        oldCanvas
+          .getContext("2d")
+          .drawImage(canvas, 0, 0);
+      }
+
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+
+      if (oldCanvas.width && oldCanvas.height) {
+        ctx.drawImage(
+          oldCanvas,
+          0,
+          0,
+          oldCanvas.width,
+          oldCanvas.height,
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+      }
+    }
+
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+
+    function getPosition(event) {
+      const rect = canvas.getBoundingClientRect();
+
+      return {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+      };
+    }
+
+    canvas.addEventListener("pointerdown", (event) => {
+      isDrawing = true;
+
+      const { x, y } = getPosition(event);
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    });
+
+    canvas.addEventListener("pointermove", (event) => {
+      if (!isDrawing) return;
+
+      const { x, y } = getPosition(event);
+
+      ctx.lineWidth = sizePicker.value;
+      ctx.strokeStyle = colorPicker.value;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    });
+
+    canvas.addEventListener("pointerup", () => {
+      isDrawing = false;
+      ctx.closePath();
+    });
+
+    canvas.addEventListener("pointerleave", () => {
+      isDrawing = false;
+    });
+
+    clearBtn.addEventListener("click", () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    downloadBtn.addEventListener("click", () => {
+      const link = document.createElement("a");
+
+      link.download = "my-canvas.png";
+      link.href = canvas.toDataURL("image/png");
+
+      link.click();
+    });
+  </script>
+
+</body>
+</html>
