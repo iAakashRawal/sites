@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+
+  <!-- Responsive design -->
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>HTML Form Practice</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      color: #1f2937;
+    }
+
+    .container {
+      width: min(900px, 94%);
+      margin: 40px auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .header h1 {
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: #6b7280;
+    }
+
+    form {
+      background: #fff;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    fieldset {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 25px;
+    }
+
+    legend {
+      padding: 0 10px;
+      font-weight: 700;
+      color: #4f46e5;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .required {
+      color: #dc2626;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: 0.2s;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+    }
+
+    input:invalid:not(:placeholder-shown),
+    select:invalid,
+    textarea:invalid:not(:placeholder-shown) {
+      border-color: #ef4444;
+    }
+
+    input:valid:not(:placeholder-shown),
+    textarea:valid:not(:placeholder-shown) {
+      border-color: #22c55e;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .radio-group,
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding-top: 5px;
+    }
+
+    .radio-item,
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-weight: normal;
+      cursor: pointer;
+    }
+
+    .radio-item input,
+    .checkbox-item input {
+      width: auto;
+    }
+
+    .range-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .range-row input {
+      flex: 1;
+    }
+
+    #experienceValue {
+      min-width: 45px;
+      font-weight: 700;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    button {
+      border: 0;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .reset {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .submit {
+      background: #4f46e5;
+      color: white;
+    }
+
+    .submit:hover {
+      background: #4338ca;
+    }
+
+    .terms {
+      margin-bottom: 20px;
+    }
+
+    .success {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background: #dcfce7;
+      color: #166534;
+      border-radius: 8px;
+    }
+
+    @media (max-width: 650px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .full {
+        grid-column: auto;
+      }
+
+      form {
+        padding: 18px;
+      }
+
+      fieldset {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="header">
+      <h1>HTML Form Practice</h1>
+      <p>
+        A complete form demonstrating common HTML input types
+        and native validation.
+      </p>
+    </div>
+
+
+    <form id="registrationForm">
+
+      <!-- ========================================= -->
+      <!-- PERSONAL INFORMATION -->
+      <!-- ========================================= -->
+
+      <fieldset>
+
+        <legend>Personal Information</legend>
+
+        <div class="form-grid">
+
+          <!-- Text -->
+          <div class="field">
+
+            <label for="firstName">
+              First Name <span class="required">*</span>
+            </label>
+
+            <input
+              type="text"
+              id="firstName"
+              name="firstName"
+              placeholder="Enter first name"
+              required
+              minlength="2"
+              maxlength="30"
+              autocomplete="given-name"
+            />
+
+          </div>
+
+
+          <!-- Text -->
+          <div class="field">
+
+            <label for="lastName">
+              Last Name <span class="required">*</span>
+            </label>
+
+            <input
+              type="text"
+              id="lastName"
+              name="lastName"
+              placeholder="Enter last name"
+              required
+              minlength="2"
+              maxlength="30"
+              autocomplete="family-name"
+            />
+
+          </div>
+
+
+          <!-- Email -->
+          <div class="field">
+
+            <label for="email">
+              Email <span class="required">*</span>
+            </label>
+
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="you@example.com"
+              required
+              autocomplete="email"
+            />
+
+            <span class="hint">
+              Example: student@example.com
+            </span>
+
+          </div>
+
+
+          <!-- Telephone -->
+          <div class="field">
+
+            <label for="phone">
+              Phone Number <span class="required">*</span>
+            </label>
+
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              placeholder="9876543210"
+              required
+              pattern="[6-9][0-9]{9}"
+              title="Enter a valid 10-digit Indian mobile number"
+              autocomplete="tel"
+            />
+
+          </div>
+
+
+          <!-- Password -->
+          <div class="field">
+
+            <label for="password">
+              Password <span class="required">*</span>
+            </label>
+
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Enter password"
+              required
+              minlength="8"
+              maxlength="30"
+              autocomplete="new-password"
+            />
+
+            <span class="hint">
+              Minimum 8 characters.
+            </span>
+
+          </div>
+
+
+          <!-- Date -->
+          <div class="field">
+
+            <label for="dob">
+              Date of Birth <span class="required">*</span>
+            </label>
+
+            <input
+              type="date"
+              id="dob"
+              name="dob"
+              required
+              min="1950-01-01"
+              max="2010-12-31"
+            />
+
+          </div>
+
+
+          <!-- Number -->
+          <div class="field">
+
+            <label for="age">
+              Age <span class="required">*</span>
+            </label>
+
+            <input
+              type="number"
+              id="age"
+              name="age"
+              placeholder="18"
+              min="18"
+              max="100"
+              required
+            />
+
+          </div>
+
+
+          <!-- URL -->
+          <div class="field">
+
+            <label for="website">
+              Website
+            </label>
+
+            <input
+              type="url"
+              id="website"
+              name="website"
+              placeholder="https://example.com"
+            />
+
+          </div>
+
+        </div>
+
+      </fieldset>
+
+
+      <!-- ========================================= -->
+      <!-- GENDER -->
+      <!-- ========================================= -->
+
+      <fieldset>
+
+        <legend>Gender</legend>
+
+        <div class="radio-group">
+
+          <label class="radio-item">
+            <input
+              type="radio"
+              name="gender"
+              value="male"
+              required
+            />
+            Male
+          </label>
+
+          <label class="radio-item">
+            <input
+              type="radio"
+              name="gender"
+              value="female"
+            />
+            Female
+          </label>
+
+          <label class="radio-item">
+            <input
+              type="radio"
+              name="gender"
+              value="other"
+            />
+            Other
+          </label>
+
+        </div>
+
+      </fieldset>
+
+
+      <!-- ========================================= -->
+      <!-- ADDRESS -->
+      <!-- ========================================= -->
+
+      <fieldset>
+
+        <legend>Address</legend>
+
+        <div class="form-grid">
+
+          <!-- Textarea -->
+          <div class="field full">
+
+            <label for="address">
+              Address <span class="required">*</span>
+            </label>
+
+            <textarea
+              id="address"
+              name="address"
+              placeholder="Enter your complete address"
+              required
+              minlength="10"
+              maxlength="300"
+            ></textarea>
+
+          </div>
+
+
+          <!-- Select -->
+          <div class="field">
+
+            <label for="country">
+              Country <span class="required">*</span>
+            </label>
+
+            <select
+              id="country"
+              name="country"
+              required
+            >
+              <option value="">Select country</option>
+              <option value="india">India</option>
+              <option value="usa">USA</option>
+              <option value="uk">United Kingdom</option>
+              <option value="canada">Canada</option>
+            </select>
+
+          </div>
+
+
+          <!-- Select -->
+          <div class="field">
+
+            <label for="state">
+              State <span class="required">*</span>
+            </label>
+
+            <select
+              id="state"
+              name="state"
+              required
+            >
+              <option value="">Select state</option>
+              <option value="mp">
+                Madhya Pradesh
+              </option>
+              <option value="rajasthan">
+                Rajasthan
+              </option>
+              <option value="odisha">
+                Odisha
+              </option>
+              <option value="maharashtra">
+                Maharashtra
+              </option>
+              <option value="delhi">
+                Delhi
+              </option>
+            </select>
+
+          </div>
+
+
+          <!-- Datalist -->
+          <div class="field">
+
+            <label for="city">
+              City
+            </label>
+
+            <input
+              list="cities"
+              id="city"
+              name="city"
+              placeholder="Start typing..."
+            />
+
+            <datalist id="cities">
+              <option value="Bhopal"></option>
+              <option value="Indore"></option>
+              <option value="Neemuch"></option>
+              <option value="Jaipur"></option>
+              <option value="Bhubaneswar"></option>
+              <option value="Mumbai"></option>
+              <option value="Delhi"></option>
+            </datalist>
+
+          </div>
+
+
+          <!-- ZIP -->
+          <div class="field">
+
+            <label for="pincode">
+              PIN Code <span class="required">*</span>
+            </label>
+
+            <input
+              type="text"
+              id="pincode"
+              name="pincode"
+              placeholder="458441"
+              required
+              pattern="[1-9][0-9]{5}"
+              maxlength="6"
+              title="Enter a valid 6-digit PIN code"
+            />
+
+          </div>
+
+        </div>
+
+      </fieldset>
+
+
+      <!-- ========================================= -->
+      <!-- EDUCATION -->
+      <!-- ========================================= -->
+
+      <fieldset>
+
+        <legend>Education & Skills</legend>
+
+        <div class="form-grid">
+
+          <!-- Select -->
+          <div class="field">
+
+            <label for="education">
+              Highest Education
+              <span class="required">*</span>
+            </label>
+
+            <select
+              id="education"
+              name="education"
+              required
+            >
+              <option value="">Select education</option>
+              <option value="10th">10th</option>
+              <option value="12th">12th</option>
+              <option value="diploma">Diploma</option>
+              <option value="bca">BCA</option>
+              <option value="btech">B.Tech</option>
+              <option value="mca">MCA</option>
+              <option value="mtech">M.Tech</option>
+              <option value="other">Other</option>
+            </select>
+
+          </div>
+
+
+          <!-- Range -->
+          <div class="field">
+
+            <label for="experience">
+              Experience
+            </label>
+
+            <div class="range-row">
+
+              <input
+                type="range"
+                id="experience"
+                name="experience"
+                min="0"
+                max="20"
+                value="2"
+              />
+
+              <span id="experienceValue">
+                2 years
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <!-- Checkboxes -->
+          <div class="field full">
+
+            <label>
+              Skills
+              <span class="required">*</span>
+            </label>
+
+            <div class="checkbox-group">
+
+              <label class="checkbox-item">
+                <input
+                  type="checkbox"
+                  name="skills"
+                  value="html"
+                  required
+                />
+                HTML
+              </label>
+
+              <label class="checkbox-item">
+                <input
+                  type="checkbox"
+                  name="skills"
+                  value="css"
+                />
+                CSS
+              </label>
+
+              <label class="checkbox-item">
+                <input
+                  type="checkbox"
+                  name="skills"
+                  value="javascript"
+                />
+                JavaScript
+              </label>
+
+              <label class="checkbox-item">
+                <input
+                  type="checkbox"
+                  name="skills"
+                  value="react"
+                />
+                React
+              </label>
+
+              <label class="checkbox-item">
+                <input
+                  type="checkbox"
+                  name="skills"
+                  value="nextjs"
+                />
+                Next.js
+              </label>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </fieldset>
+
+
+      <!-- ========================================= -->
+      <!-- OTHER HTML INPUT TYPES -->
+      <!-- ========================================= -->
+
+      <fieldset>
+
+        <legend>Other Input Types</legend>
+
+        <div class="form-grid">
+
+          <!-- Time -->
+          <div class="field">
+
+            <label for="preferredTime">
+              Preferred Time
+            </label>
+
+            <input
+              type="time"
+              id="preferredTime"
+              name="preferredTime"
+            />
+
+          </div>
+
+
+          <!-- Month -->
+          <div class="field">
+
+            <label for="joiningMonth">
+              Joining Month
+            </label>
+
+            <input
+              type="month"
+              id="joiningMonth"
+              name="joiningMonth"
+            />
+
+          </div>
+
+
+          <!-- Week -->
+          <div class="field">
+
+            <label for="week">
+              Preferred Week
+            </label>
+
+            <input
+              type="week"
+              id="week"
+              name="week"
+            />
+
+          </div>
+
+
+          <!-- DateTime Local -->
+          <div class="field">
+
+            <label for="appointment">
+              Appointment
+            </label>
+
+            <input
+              type="datetime-local"
+              id="appointment"
+              name="appointment"
+            />
+
+          </div>
+
+
+          <!-- Color -->
+          <div class="field">
+
+            <label for="favoriteColor">
+              Favorite Color
+            </label>
+
+            <input
+              type="color"
+              id="favoriteColor"
+              name="favoriteColor"
+              value="#4f46e5"
+            />
+
+          </div>
+
+
+          <!-- Search -->
+          <div class="field">
+
+            <label for="search">
+              Search
+            </label>
+
+            <input
+              type="search"
+              id="search"
+              name="search"
+              placeholder="Search something..."
+            />
+
+          </div>
+
+        </div>
+
+      </fieldset>
+
+
+      <!-- ========================================= -->
+      <!-- FILE UPLOAD -->
+      <!-- ========================================= -->
+
+      <fieldset>
+
+        <legend>File Upload</legend>
+
+        <div class="form-grid">
+
+          <div class="field">
+
+            <label for="profilePhoto">
+              Profile Photo
+            </label>
+
+            <input
+              type="file"
+              id="profilePhoto"
+              name="profilePhoto"
+              accept="image/png, image/jpeg"
+            />
+
+            <span class="hint">
+              PNG or JPG only.
+            </span>
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="resume">
+              Resume
+            </label>
+
+            <input
+              type="file"
+              id="resume"
+              name="resume"
+              accept=".pdf,.doc,.docx"
+            />
+
+            <span class="hint">
+              PDF, DOC or DOCX.
+            </span>
+
+          </div>
+
+        </div>
+
+      </fieldset>
+
+
+      <!-- ========================================= -->
+      <!-- MESSAGE -->
+      <!-- ========================================= -->
+
+      <fieldset>
+
+        <legend>Additional Information</legend>
+
+        <div class="field">
+
+          <label for="message">
+            Message
+          </label>
+
+          <textarea
+            id="message"
+            name="message"
+            placeholder="Write something..."
+            maxlength="500"
+          ></textarea>
+
+          <span class="hint">
+            Maximum 500 characters.
+          </span>
+
+        </div>
+
+      </fieldset>
+
+
+      <!-- ========================================= -->
+      <!-- TERMS -->
+      <!-- ========================================= -->
+
+      <div class="terms">
+
+        <label class="checkbox-item">
+
+          <input
+            type="checkbox"
+            id="terms"
+            name="terms"
+            required
+          />
+
+          I agree to the
+          <a href="#">Terms & Conditions</a>
+          <span class="required">*</span>
+
+        </label>
+
+      </div>
+
+
+      <!-- ========================================= -->
+      <!-- BUTTONS -->
+      <!-- ========================================= -->
+
+      <div class="buttons">
+
+        <button
+          type="reset"
+          class="reset"
+        >
+          Reset
+        </button>
+
+        <button
+          type="submit"
+          class="submit"
+        >
+          Submit Form
+        </button>
+
+      </div>
+
+
+      <div
+        class="success"
+        id="successMessage"
+      >
+        ✅ Form submitted successfully!
+      </div>
+
+    </form>
+
+  </div>
+
+
+  <script>
+
+    /*
+      =========================================
+      EXPERIENCE RANGE
+      =========================================
+    */
+
+    const experience =
+      document.getElementById("experience");
+
+    const experienceValue =
+      document.getElementById("experienceValue");
+
+    function updateExperience() {
+
+      const value = experience.value;
+
+      experienceValue.textContent =
+        `${value} ${value == 1 ? "year" : "years"}`;
+
+    }
+
+    experience.addEventListener(
+      "input",
+      updateExperience
+    );
+
+
+    /*
+      =========================================
+      FORM SUBMIT
+      =========================================
+    */
+
+    const form =
+      document.getElementById("registrationForm");
+
+    const successMessage =
+      document.getElementById("successMessage");
+
+    form.addEventListener("submit", function (event) {
+
+      /*
+        Browser's built-in validation runs first.
+      */
+
+      if (!form.checkValidity()) {
+
+        event.preventDefault();
+
+        form.reportValidity();
+
+        return;
+      }
+
+
+      /*
+        Prevent actual page submission
+        for this learning example.
+      */
+
+      event.preventDefault();
+
+      successMessage.style.display = "block";
+
+      successMessage.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+
+    });
+
+
+    /*
+      =========================================
+      RESET
+      =========================================
+    */
+
+    form.addEventListener("reset", function () {
+
+      successMessage.style.display = "none";
+
+      setTimeout(() => {
+        updateExperience();
+      }, 0);
+
+    });
+
+  </script>
+
+</body>
+</html>
