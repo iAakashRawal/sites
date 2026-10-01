@@ -1,0 +1,1342 @@
+I am a Software Developer and I want to learn TanStack Query (React Query) properly through a real-world production-style project.
+
+Build a complete User Management CRUD application using:
+
+- Next.js App Router
+- React
+- TypeScript
+- TanStack Query / React Query v5
+- Axios
+- React Hook Form
+- Zod
+- Tailwind CSS
+- TypeScript strict mode
+- TanStack Query Devtools
+
+Use clean, scalable, production-ready architecture.
+
+1. Project Goal
+
+Create a complete User Management application with:
+
+- User listing
+- User details
+- Create user
+- Edit user
+- Patch user
+- Delete user
+- Search
+- Filtering
+- Pagination
+- Sorting
+- Loading states
+- Error states
+- Empty states
+- Retry
+- Refetch
+- Cache management
+- Optimistic updates
+- Rollback
+- Background refetching
+- Dependent queries
+- Prefetching
+- Query cancellation
+- Query invalidation
+- Manual cache updates
+- Authentication-like cache cleanup
+- React Hook Form integration
+- Zod validation
+- API error handling
+- Toast/success/error handling
+
+The main purpose is to teach me React Query, not just give me code.
+
+Explain every important concept with practical examples.
+
+---
+
+2. Installation
+
+Show the exact installation commands using pnpm:
+
+pnpm add @tanstack/react-query axios react-hook-form zod @hookform/resolvers
+pnpm add @tanstack/react-query-devtools
+
+Explain what every package does.
+
+---
+
+3. Folder Architecture
+
+Use this structure:
+
+src/
+├── app/
+│   ├── layout.tsx
+│   ├── page.tsx
+│   └── users/
+│       ├── page.tsx
+│       └── [id]/
+│           └── page.tsx
+│
+├── components/
+│   ├── providers/
+│   │   └── query-provider.tsx
+│   │
+│   ├── users/
+│   │   ├── user-list.tsx
+│   │   ├── user-table.tsx
+│   │   ├── user-form.tsx
+│   │   ├── create-user.tsx
+│   │   ├── edit-user.tsx
+│   │   └── delete-user-dialog.tsx
+│   │
+│   └── common/
+│       ├── loading.tsx
+│       ├── error-state.tsx
+│       └── empty-state.tsx
+│
+├── hooks/
+│   └── users/
+│       ├── use-users.ts
+│       ├── use-user.ts
+│       ├── use-create-user.ts
+│       ├── use-update-user.ts
+│       ├── use-patch-user.ts
+│       └── use-delete-user.ts
+│
+├── lib/
+│   ├── axios.ts
+│   └── query-client.ts
+│
+├── services/
+│   └── user.service.ts
+│
+├── schemas/
+│   └── user.schema.ts
+│
+├── types/
+│   └── user.ts
+│
+└── constants/
+    └── query-keys.ts
+
+Explain why this architecture is useful.
+
+---
+
+4. Axios Setup
+
+Create:
+
+src/lib/axios.ts
+
+Use:
+
+import axios from "axios";
+
+export const api = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+Create:
+
+NEXT_PUBLIC_API_URL=https://api.example.com
+
+Explain:
+
+- Axios instance
+- baseURL
+- headers
+- interceptors
+- request interceptor
+- response interceptor
+- authentication token
+- global API error handling
+
+Also show how to add an Authorization header.
+
+---
+
+5. TypeScript Types
+
+Create:
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  website?: string;
+  status: "ACTIVE" | "INACTIVE";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateUserPayload {
+  name: string;
+  email: string;
+  phone: string;
+  website?: string;
+}
+
+export interface UpdateUserPayload {
+  name: string;
+  email: string;
+  phone: string;
+  website?: string;
+}
+
+export interface UserFilters {
+  search?: string;
+  status?: "ACTIVE" | "INACTIVE";
+  page: number;
+  limit: number;
+}
+
+Explain the types.
+
+---
+
+6. Zod Validation
+
+Create:
+
+schemas/user.schema.ts
+
+Use Zod for:
+
+- name
+- email
+- phone
+- website
+- status
+
+Include proper validation messages.
+
+Use:
+
+zodResolver
+
+with React Hook Form.
+
+---
+
+7. QueryClient Setup
+
+Create:
+
+lib/query-client.ts
+
+Configure:
+
+new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30 * 1000,
+      gcTime: 5 * 60 * 1000,
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 0,
+    },
+  },
+});
+
+Explain in detail:
+
+- QueryClient
+- staleTime
+- gcTime
+- retry
+- refetchOnWindowFocus
+- cache
+- stale data
+- garbage collection
+
+---
+
+8. QueryProvider
+
+Create:
+
+components/providers/query-provider.tsx
+
+Use:
+
+<QueryClientProvider client={queryClient}>
+  {children}
+
+  <ReactQueryDevtools initialIsOpen={false} />
+</QueryClientProvider>
+
+Show how to add it to:
+
+app/layout.tsx
+
+Explain why the provider is required.
+
+---
+
+9. API Service Layer
+
+Create:
+
+services/user.service.ts
+
+Implement:
+
+getUsers()
+getUser(id)
+createUser(payload)
+updateUser(id, payload)
+patchUser(id, payload)
+deleteUser(id)
+
+Use Axios.
+
+Example:
+
+const response = await api.get("/users");
+
+return response.data;
+
+Explain why API calls should be separated from React Query hooks.
+
+---
+
+10. Query Keys
+
+Create a proper query-key factory:
+
+export const userKeys = {
+  all: ["users"] as const,
+
+  lists: () =>
+    [...userKeys.all, "list"] as const,
+
+  list: (filters: UserFilters) =>
+    [...userKeys.lists(), filters] as const,
+
+  details: () =>
+    [...userKeys.all, "detail"] as const,
+
+  detail: (id: number) =>
+    [...userKeys.details(), id] as const,
+};
+
+Explain:
+
+- What is a query key?
+- Why query keys matter
+- Cache separation
+- Dynamic query keys
+- Filter query keys
+- Detail query keys
+- Query-key factories
+
+---
+
+11. useQuery
+
+Create:
+
+hooks/users/use-users.ts
+
+Use:
+
+useQuery({
+  queryKey,
+  queryFn,
+});
+
+Show:
+
+- data
+- error
+- isPending
+- isLoading
+- isFetching
+- isError
+- isSuccess
+- refetch
+
+Explain the difference between:
+
+isPending
+isLoading
+isFetching
+
+with a practical example.
+
+---
+
+12. Single User Query
+
+Create:
+
+hooks/users/use-user.ts
+
+Use:
+
+useQuery({
+  queryKey: userKeys.detail(id),
+  queryFn: () => userService.getUser(id),
+  enabled: !!id,
+});
+
+Explain:
+
+- enabled
+- conditional queries
+- dependent queries
+
+---
+
+13. useMutation
+
+Create separate hooks for:
+
+useCreateUser
+useUpdateUser
+usePatchUser
+useDeleteUser
+
+Explain:
+
+mutationFn
+onMutate
+onSuccess
+onError
+onSettled
+
+Show both:
+
+mutate()
+
+and:
+
+mutateAsync()
+
+Explain when each should be used.
+
+---
+
+14. POST
+
+Create user using:
+
+useMutation({
+  mutationFn: userService.createUser,
+});
+
+After successful creation:
+
+queryClient.invalidateQueries({
+  queryKey: userKeys.lists(),
+});
+
+Explain the complete flow:
+
+Form
+ ↓
+mutate
+ ↓
+POST API
+ ↓
+Success
+ ↓
+invalidateQueries
+ ↓
+GET users
+ ↓
+Updated UI
+
+---
+
+15. PUT
+
+Implement:
+
+updateUser(id, payload)
+
+After success:
+
+queryClient.setQueryData(
+  userKeys.detail(id),
+  updatedUser
+);
+
+queryClient.invalidateQueries({
+  queryKey: userKeys.lists(),
+});
+
+Explain why both operations can be useful.
+
+---
+
+16. PATCH
+
+Implement partial updates:
+
+Partial<UpdateUserPayload>
+
+Use:
+
+PATCH /users/:id
+
+Update the cache after success.
+
+---
+
+17. DELETE
+
+Implement:
+
+deleteUser(id)
+
+After successful deletion:
+
+queryClient.removeQueries({
+  queryKey: userKeys.detail(id),
+});
+
+queryClient.invalidateQueries({
+  queryKey: userKeys.lists(),
+});
+
+Explain the difference between:
+
+removeQueries
+invalidateQueries
+resetQueries
+
+---
+
+18. invalidateQueries
+
+Teach:
+
+queryClient.invalidateQueries({
+  queryKey: ["users"],
+});
+
+Explain:
+
+- What invalidation means
+- Why it makes queries stale
+- When refetch occurs
+- Partial query-key matching
+
+Give practical examples.
+
+---
+
+19. refetchQueries
+
+Teach:
+
+await queryClient.refetchQueries({
+  queryKey: ["users"],
+});
+
+Clearly explain the difference:
+
+invalidateQueries
+vs
+refetchQueries
+
+Do not confuse them.
+
+---
+
+20. setQueryData
+
+Show:
+
+queryClient.setQueryData(
+  userKeys.detail(id),
+  updatedUser
+);
+
+Explain that this directly updates the cache without making another GET request.
+
+Give at least three practical examples.
+
+---
+
+21. getQueryData
+
+Show:
+
+const user =
+  queryClient.getQueryData<User>(
+    userKeys.detail(id)
+  );
+
+Explain when this is useful.
+
+---
+
+22. setQueriesData
+
+Show how to update multiple matching cached queries:
+
+queryClient.setQueriesData(
+  {
+    queryKey: userKeys.lists(),
+  },
+  updater
+);
+
+Explain practical usage.
+
+---
+
+23. removeQueries
+
+Show:
+
+queryClient.removeQueries({
+  queryKey: ["users"],
+});
+
+Explain when to use it.
+
+Include logout example.
+
+---
+
+24. resetQueries
+
+Show:
+
+queryClient.resetQueries({
+  queryKey: ["users"],
+});
+
+Explain difference between reset and remove.
+
+---
+
+25. cancelQueries
+
+Explain:
+
+await queryClient.cancelQueries({
+  queryKey: userKeys.detail(id),
+});
+
+Explain why cancellation is important for optimistic updates.
+
+---
+
+26. Optimistic Update
+
+Implement a complete optimistic update.
+
+Flow:
+
+User clicks update
+ ↓
+cancelQueries
+ ↓
+get previous cache
+ ↓
+update cache immediately
+ ↓
+API request
+ ↓
+SUCCESS → keep changes
+ERROR → rollback
+SETTLED → refetch
+
+Use:
+
+onMutate
+onError
+onSettled
+
+Store the previous data and rollback if API fails.
+
+Provide complete TypeScript code.
+
+---
+
+27. Search
+
+Implement:
+
+search
+
+with React state.
+
+Use query key:
+
+["users", "list", search]
+
+Explain why changing the search value creates different cached queries.
+
+Also explain debounce.
+
+Implement a simple debounce solution.
+
+---
+
+28. Filters
+
+Add:
+
+status
+search
+page
+limit
+
+Use:
+
+UserFilters
+
+as part of the query key.
+
+Example:
+
+queryKey: userKeys.list(filters)
+
+Explain why filters must be included in the query key.
+
+---
+
+29. Pagination
+
+Implement server-side pagination:
+
+?page=1&limit=10
+
+Use:
+
+page
+limit
+
+in the query key.
+
+Show:
+
+- Previous
+- Next
+- Current page
+- Total pages
+- Disabled states
+
+Use:
+
+placeholderData: keepPreviousData
+
+Explain why it improves pagination UX.
+
+---
+
+30. Sorting
+
+Implement:
+
+sortBy
+sortOrder
+
+Add them to query keys.
+
+Example:
+
+{
+  page,
+  limit,
+  search,
+  status,
+  sortBy,
+  sortOrder
+}
+
+Explain cache behavior.
+
+---
+
+31. Dependent Queries
+
+Create:
+
+User
+ ↓
+User Orders
+
+Fetch orders only after the user exists.
+
+Use:
+
+enabled: !!userId
+
+Explain dependent queries clearly.
+
+---
+
+32. Prefetching
+
+Teach:
+
+queryClient.prefetchQuery({
+  queryKey: userKeys.detail(id),
+  queryFn: () => userService.getUser(id),
+});
+
+Use it when hovering over a user row.
+
+Explain why prefetching improves UX.
+
+---
+
+33. Initial Data
+
+Explain:
+
+initialData
+
+with example.
+
+Explain the difference between:
+
+initialData
+placeholderData
+
+---
+
+34. select
+
+Show:
+
+select: (users) =>
+  users.map(user => user.name)
+
+Explain how select transforms query data without modifying the original cache.
+
+---
+
+35. staleTime
+
+Explain with examples:
+
+staleTime: 0
+staleTime: 30 seconds
+staleTime: 5 minutes
+staleTime: Infinity
+
+Explain when each might make sense.
+
+---
+
+36. gcTime
+
+Explain:
+
+gcTime
+
+and how inactive cache is removed.
+
+Explain the difference:
+
+staleTime
+vs
+gcTime
+
+with a simple diagram.
+
+---
+
+37. Retry
+
+Show:
+
+retry: 2
+
+Explain:
+
+- Network failure
+- Server error
+- Retry behavior
+- When retry should be disabled
+- Mutation retry
+
+---
+
+38. Background Refetch
+
+Explain:
+
+isFetching
+
+and show how to display:
+
+Refreshing...
+
+while keeping existing data visible.
+
+---
+
+39. Error Handling
+
+Create a reusable error component.
+
+Show:
+
+if (isError) {
+  return <ErrorState />;
+}
+
+Implement retry:
+
+<button onClick={() => refetch()}>
+  Retry
+</button>
+
+Also show global Axios error handling.
+
+---
+
+40. Loading UI
+
+Implement:
+
+Initial loading
+Background loading
+Button loading
+Mutation loading
+Delete loading
+
+Do not replace existing data unnecessarily during background refetch.
+
+---
+
+41. Empty State
+
+Handle:
+
+No users found
+
+separately from loading and error.
+
+---
+
+42. React Hook Form Integration
+
+Create a complete UserForm using:
+
+React Hook Form
++
+Zod
++
+TanStack Query mutation
+
+Use:
+
+useForm
+zodResolver
+handleSubmit
+formState.errors
+
+Submit:
+
+createUser.mutateAsync(data)
+
+Show:
+
+- Validation
+- API error
+- Loading
+- Success
+- Reset
+
+---
+
+43. Edit Form
+
+For edit mode:
+
+GET user
+ ↓
+populate React Hook Form
+ ↓
+User edits
+ ↓
+PUT
+ ↓
+update cache
+
+Use:
+
+reset(user)
+
+Explain why "reset()" is preferable to manually setting every field.
+
+---
+
+44. Complete CRUD UI
+
+Create a complete page:
+
+Users
+
+[ Search................ ]
+
+[ Status ▼ ] [ Sort ▼ ]
+
+-----------------------------------------
+Name | Email | Phone | Status | Actions
+-----------------------------------------
+Akash | ... | ... | ACTIVE | Edit Delete
+Rahul | ... | ... | ACTIVE | Edit Delete
+-----------------------------------------
+
+[Previous] 1 2 3 [Next]
+
+[ + Create User ]
+
+Actions:
+
+View
+Edit
+Delete
+
+---
+
+45. React Query Devtools
+
+Configure:
+
+<ReactQueryDevtools initialIsOpen={false} />
+
+Explain how to inspect:
+
+- Queries
+- Query keys
+- Cached data
+- Stale state
+- Fetch status
+- Refetch
+- Remove cache
+
+Teach me how to debug duplicate API requests using Devtools.
+
+---
+
+46. Avoid Duplicate API Requests
+
+Explain common reasons:
+
+- Strict Mode
+- Multiple components using same query
+- Different query keys
+- Different object references
+- Incorrect query keys
+- "staleTime: 0"
+- Manual refetch
+- invalidateQueries
+- useEffect calling APIs manually
+
+Show correct patterns.
+
+---
+
+47. Do NOT use React Query incorrectly
+
+Explain why I should NOT do:
+
+useEffect(() => {
+  fetchUsers();
+}, []);
+
+when the request is server state.
+
+Instead:
+
+useQuery({
+  queryKey: ["users"],
+  queryFn: fetchUsers,
+});
+
+Explain the difference between:
+
+Client State
+vs
+Server State
+
+Also explain when Zustand/Redux should be used instead of React Query.
+
+---
+
+48. Authentication Scenario
+
+Show how React Query could manage:
+
+currentUser
+profile
+permissions
+
+Example:
+
+useQuery({
+  queryKey: ["me"],
+  queryFn: getCurrentUser,
+});
+
+On logout:
+
+queryClient.clear();
+
+Explain why cached private data should be cleared after logout.
+
+---
+
+49. Real Production Pattern
+
+Show the recommended architecture:
+
+Component
+   ↓
+Custom React Query Hook
+   ↓
+Service Layer
+   ↓
+Axios
+   ↓
+Backend API
+
+And:
+
+Mutation
+   ↓
+API
+   ↓
+Cache Update
+   ↓
+invalidateQueries / setQueryData
+   ↓
+UI
+
+---
+
+50. Complete Code
+
+After explaining everything, provide the complete working project code.
+
+Do not provide pseudocode.
+
+Every file should be clearly separated:
+
+// file: src/lib/axios.ts
+
+Then complete code.
+
+Make sure all imports work.
+
+Use TypeScript.
+
+Do not leave undefined functions.
+
+Do not leave TODO comments.
+
+Make the application runnable after copying the files.
+
+---
+
+51. Learning Section
+
+At the end, create a React Query learning roadmap:
+
+Beginner
+
+1. QueryClient
+2. QueryProvider
+3. useQuery
+4. queryKey
+5. queryFn
+6. loading
+7. error
+8. refetch
+
+Intermediate
+
+9. useMutation
+10. invalidateQueries
+11. setQueryData
+12. getQueryData
+13. removeQueries
+14. resetQueries
+15. enabled
+16. pagination
+17. search
+18. filters
+19. dependent queries
+
+Advanced
+
+20. optimistic updates
+21. rollback
+22. prefetching
+23. cancellation
+24. placeholderData
+25. initialData
+26. select
+27. cache architecture
+28. authentication
+29. background refetch
+30. performance optimization
+
+---
+
+52. Interview Questions
+
+At the end provide at least 30 React Query interview questions with answers.
+
+Include questions such as:
+
+- What is React Query?
+- What problem does React Query solve?
+- What is server state?
+- What is a query key?
+- What is staleTime?
+- What is gcTime?
+- Difference between staleTime and gcTime?
+- Difference between isPending and isFetching?
+- Difference between useQuery and useMutation?
+- Difference between invalidateQueries and refetchQueries?
+- What is setQueryData?
+- What is optimistic update?
+- What is rollback?
+- What is enabled?
+- What are dependent queries?
+- What is prefetchQuery?
+- What is placeholderData?
+- What is initialData?
+- What is select?
+- How do you prevent duplicate requests?
+- How do you handle authentication?
+- How do you clear cache on logout?
+- How do you implement pagination?
+- How do you implement infinite scrolling?
+- How does React Query caching work?
+- How do you debug React Query?
+- When should Redux/Zustand be used instead?
+- How do you handle API errors?
+- How do you update cache after mutation?
+- How do you implement optimistic UI?
+
+---
+
+53. Practical Exercises
+
+After the project, give me exercises in increasing difficulty.
+
+Exercise 1
+
+Create a simple GET users query.
+
+Exercise 2
+
+Add search.
+
+Exercise 3
+
+Add pagination.
+
+Exercise 4
+
+Add create user.
+
+Exercise 5
+
+Add edit user.
+
+Exercise 6
+
+Add delete user.
+
+Exercise 7
+
+Add optimistic update.
+
+Exercise 8
+
+Add rollback.
+
+Exercise 9
+
+Add dependent queries.
+
+Exercise 10
+
+Add prefetching.
+
+Exercise 11
+
+Add infinite scrolling.
+
+Exercise 12
+
+Create a complete production-style dashboard.
+
+For each exercise provide:
+
+- Requirement
+- Expected behavior
+- API requirement
+- What React Query features should be used
+- Expected result
+
+Do not immediately provide the solution unless I ask for it.
+
+---
+
+54. Important Teaching Style
+
+I am learning React Query, so explain concepts in simple Hinglish where useful.
+
+For every major API/method explain:
+
+What is it?
+Why do we need it?
+When should we use it?
+How does it work?
+Code example
+Real-world example
+Common mistake
+
+Use diagrams such as:
+
+Component
+    ↓
+useQuery
+    ↓
+Query Cache
+    ↓
+API
+
+and:
+
+Mutation
+    ↓
+API
+    ↓
+Success
+    ↓
+Cache Update
+    ↓
+UI
+
+Do not just dump code.
+
+Teach me the reasoning behind the architecture.
+
+Use TanStack Query v5 APIs and avoid deprecated React Query APIs.
+
+At the end, give me a concise React Query cheat sheet containing the most important methods and when to use each one.
